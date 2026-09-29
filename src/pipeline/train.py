@@ -15,6 +15,7 @@ from src.data.load_data import load_raw_data
 from src.data.validate_data import validate_data
 from src.features.build_features import add_engineered_features
 from src.pipeline.preprocessing import build_preprocessor
+from src.pipeline.tracking import configure_mlflow, log_training_run
 from src.training.train_model import (
     build_candidate_models,
     select_best,
@@ -58,6 +59,20 @@ def run_training(params: dict) -> dict:
 
     best_name = select_best(results, metric=model_cfg["selection_metric"])
     best_pipeline = results[best_name]["pipeline"]
+
+    configure_mlflow(PROJECT_ROOT)
+    log_training_run(
+        PROJECT_ROOT,
+        run_params={
+            "target": target,
+            "test_size": data_cfg["test_size"],
+            "random_state": data_cfg["random_state"],
+            "n_train": len(X_train),
+            "n_test": len(X_test),
+        },
+        results=results,
+        best_name=best_name,
+    )
 
     pipeline_path = PROJECT_ROOT / artifact_cfg["pipeline_path"]
     pipeline_path.parent.mkdir(parents=True, exist_ok=True)

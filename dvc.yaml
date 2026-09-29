@@ -1,0 +1,18 @@
+stages:
+  train:
+    cmd: python -m src.pipeline.train
+    deps:
+      - data/raw/data.csv
+      - src/data
+      - src/features
+      - src/pipeline/preprocessing.py
+      - src/pipeline/train.py
+      - src/training
+      - src/evaluation
+    params:
+      - params.yaml:
+    outs:
+      - models/savings_prediction_pipeline.pkl
+    metrics:
+      - reports/training_metrics.json:
+          cache: false

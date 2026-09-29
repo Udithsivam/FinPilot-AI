@@ -1,0 +1,79 @@
+schema: '2.0'
+stages:
+  train:
+    cmd: python -m src.pipeline.train
+    deps:
+    - path: data/raw/data.csv
+      hash: md5
+      md5: 82845d0e51d876adabed2866c37ab0b7
+      size: 8631892
+    - path: src/data
+      hash: md5
+      md5: 480be7c926122fe87941743111716cfb.dir
+      size: 8163
+      nfiles: 6
+    - path: src/evaluation
+      hash: md5
+      md5: 57f0fbfb45cfa2461ba196bc3eb593af.dir
+      size: 1439
+      nfiles: 4
+    - path: src/features
+      hash: md5
+      md5: b12ea1b5fe928eb76bfb8f334146da98.dir
+      size: 3430
+      nfiles: 4
+    - path: src/pipeline/preprocessing.py
+      hash: md5
+      md5: bd198cf7dabde3cf16951b6121bff33f
+      size: 928
+    - path: src/pipeline/train.py
+      hash: md5
+      md5: 89f98852cde3d017c2c24b28a3074e90
+      size: 3138
+    - path: src/training
+      hash: md5
+      md5: 73663d2d275e3e416fe4a7c23f7f608e.dir
+      size: 6071
+      nfiles: 4
+    params:
+      params.yaml:
+        artifacts:
+          pipeline_path: models/savings_prediction_pipeline.pkl
+          metrics_path: reports/training_metrics.json
+        data:
+          raw_path: data/raw/data.csv
+          target: Desired_Savings
+          test_size: 0.2
+          random_state: 42
+          drop_columns:
+          - Desired_Savings_Percentage
+          categorical_columns:
+          - Occupation
+          - City_Tier
+          known_categories:
+            Occupation:
+            - Student
+            - Professional
+            - Self_Employed
+            - Retired
+            City_Tier:
+            - Tier_1
+            - Tier_2
+            - Tier_3
+        model:
+          random_state: 42
+          candidates:
+          - linear_regression
+          - decision_tree
+          - random_forest
+          - gradient_boosting
+          selection_metric: r2
+    outs:
+    - path: models/savings_prediction_pipeline.pkl
+      hash: md5
+      md5: 918ddda877a261576a559368dbec58de
+      size: 7450
+    - path: reports/training_metrics.json
+      hash: md5
+      md5: 1a55707db899230a037d02221a4a1b53
+      size: 540
