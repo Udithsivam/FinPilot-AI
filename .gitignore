@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+data/interim/
+data/processed/
+
+mlruns/
+mlartifacts/
+
+.env
+*.log

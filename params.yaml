@@ -1,0 +1,36 @@
+data:
+  raw_path: data/raw/data.csv
+  target: Desired_Savings
+  test_size: 0.2
+  random_state: 42
+  # Desired_Savings_Percentage is Income-derived leakage: Desired_Savings is
+  # computed directly from it (Desired_Savings ~= Income * pct / 100), so it
+  # is excluded from the feature set.
+  drop_columns:
+    - Desired_Savings_Percentage
+  categorical_columns:
+    - Occupation
+    - City_Tier
+  known_categories:
+    Occupation:
+      - Student
+      - Professional
+      - Self_Employed
+      - Retired
+    City_Tier:
+      - Tier_1
+      - Tier_2
+      - Tier_3
+
+model:
+  random_state: 42
+  candidates:
+    - linear_regression
+    - decision_tree
+    - random_forest
+    - gradient_boosting
+  selection_metric: r2
+
+artifacts:
+  pipeline_path: models/savings_prediction_pipeline.pkl
+  metrics_path: reports/training_metrics.json
