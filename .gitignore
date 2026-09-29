@@ -12,3 +12,6 @@ mlflow.db
 
 .env
 *.log
+
+backend/*.db
+*.db-journal

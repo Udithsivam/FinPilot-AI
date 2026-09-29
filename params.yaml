@@ -4,10 +4,21 @@ data:
   test_size: 0.2
   random_state: 42
   # Desired_Savings_Percentage is Income-derived leakage: Desired_Savings is
-  # computed directly from it (Desired_Savings ~= Income * pct / 100), so it
-  # is excluded from the feature set.
+  # computed directly from it (Desired_Savings ~= Income * pct / 100).
+  # Disposable_Income and Potential_Savings_* are dataset-generation
+  # artifacts, not facts an API caller could supply about a real user, so
+  # they are dropped too (dropping them costs ~0 R2, see training history).
   drop_columns:
     - Desired_Savings_Percentage
+    - Disposable_Income
+    - Potential_Savings_Groceries
+    - Potential_Savings_Transport
+    - Potential_Savings_Eating_Out
+    - Potential_Savings_Entertainment
+    - Potential_Savings_Utilities
+    - Potential_Savings_Healthcare
+    - Potential_Savings_Education
+    - Potential_Savings_Miscellaneous
   categorical_columns:
     - Occupation
     - City_Tier

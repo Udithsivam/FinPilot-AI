@@ -11,9 +11,15 @@ comparison notebook (`notebooks/Review1_EDA_Model.ipynb`).
 training pipeline under `src/`, replacing ad-hoc notebook preprocessing
 with a single pipeline shared by training and inference.
 
-**Phase 3 — MLOps (in progress):** DVC for data/model versioning and
-MLflow for experiment tracking and a model registry, wired into the
-same training pipeline via `dvc.yaml`.
+**Phase 3 — MLOps (done):** DVC for data/model versioning and MLflow for
+experiment tracking and a model registry, wired into the same training
+pipeline via `dvc.yaml`.
+
+**Phase 4 — Backend (in progress):** a FastAPI + SQLAlchemy backend
+(`backend/`) with auth, user profiles, transactions, budgets, goals,
+analytics, and a savings-prediction endpoint backed by the Phase 2/3
+pipeline. Defaults to SQLite locally; point `DATABASE_URL` at Postgres
+for production.
 
 ## Project layout
 
@@ -26,9 +32,11 @@ src/training/         candidate model definitions and training loop
 src/evaluation/       evaluation metrics
 models/                trained model artifacts (DVC-tracked)
 reports/               training metrics reports
-tests/unit/            unit tests for data validation and feature engineering
 params.yaml            pipeline configuration
 dvc.yaml / dvc.lock    DVC pipeline definition
+backend/app/           FastAPI application (see Backend section below)
+tests/unit/            unit tests for data validation and feature engineering
+tests/api/             API tests for the FastAPI backend
 ```
 
 ## Environment setup
@@ -110,11 +118,60 @@ predict_savings({
 training before calling the saved pipeline, so callers only need to
 supply raw fields.
 
+## Backend (FastAPI)
+
+```
+uvicorn backend.app.main:app --reload
+```
+
+Then open http://127.0.0.1:8000/docs for interactive API docs. By
+default it uses a local SQLite file (`backend/finpilot.db`, gitignored);
+copy `.env.example` to `.env` and set `DATABASE_URL` to point at
+Postgres instead for production.
+
+Endpoints implemented so far:
+
+```
+POST /auth/register
+POST /auth/login          (OAuth2 form: username=email, password)
+
+GET  /users/me
+PUT  /users/me/profile
+
+POST   /transactions
+GET    /transactions
+DELETE /transactions/{id}
+
+POST   /budgets
+GET    /budgets            (includes spent/remaining/utilization/status)
+DELETE /budgets/{id}
+
+POST   /goals
+GET    /goals               (includes progress percentage)
+DELETE /goals/{id}
+
+GET /analytics/dashboard
+GET /analytics/monthly
+GET /analytics/categories
+
+POST /predict/savings       (uses the Phase 2/3 trained pipeline)
+
+GET /health
+GET /metrics                (Prometheus format)
+```
+
+Receipt OCR / bank statement import, AI categorization, recommendations
+and feedback endpoints are Phase 5 (Intelligence) work and not built yet.
+
 ## Tests
 
 ```
-python -m pytest tests/unit
+python -m pytest tests/
 ```
+
+`tests/unit/` covers the ML pipeline; `tests/api/` exercises the FastAPI
+backend end-to-end against an isolated in-memory/temp-file SQLite
+database (no real database needed to run them).
 
 ## Note on `Desired_Savings_Percentage`
 
