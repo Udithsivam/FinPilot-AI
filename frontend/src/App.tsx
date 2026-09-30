@@ -1,8 +1,9 @@
-import { BarChart3, Settings, Sparkles, TrendingUp } from "lucide-react";
+import { Settings, Sparkles, TrendingUp } from "lucide-react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { Analytics } from "@/pages/Analytics";
 import { Budgets } from "@/pages/Budgets";
 import { ComingSoon } from "@/pages/ComingSoon";
 import { Dashboard } from "@/pages/Dashboard";
@@ -39,16 +40,7 @@ function App() {
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/budgets" element={<Budgets />} />
         <Route path="/goals" element={<Goals />} />
-        <Route
-          path="/analytics"
-          element={
-            <ComingSoon
-              icon={BarChart3}
-              title="Analytics"
-              description="Deeper monthly and category analytics are coming next."
-            />
-          }
-        />
+        <Route path="/analytics" element={<Analytics />} />
         <Route
           path="/insights"
           element={

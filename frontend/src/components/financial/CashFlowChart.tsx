@@ -34,9 +34,10 @@ function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
 interface CashFlowChartProps {
   data: MonthlyBreakdown[];
   className?: string;
+  height?: number;
 }
 
-export function CashFlowChart({ data, className }: CashFlowChartProps) {
+export function CashFlowChart({ data, className, height = 280 }: CashFlowChartProps) {
   if (data.length === 0) {
     return (
       <EmptyState
@@ -49,7 +50,7 @@ export function CashFlowChart({ data, className }: CashFlowChartProps) {
   }
 
   return (
-    <div className={className} style={{ width: "100%", height: 280 }}>
+    <div className={className} style={{ width: "100%", height }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <defs>
