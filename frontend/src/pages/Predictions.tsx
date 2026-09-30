@@ -66,7 +66,7 @@ export function Predictions() {
               <PredictionCard
                 label="Predicted desired savings"
                 value={predict.data.predicted_desired_savings}
-                description="Monthly, based on the profile you entered."
+                description={`Monthly, based on the profile you entered. Model: ${predict.data.model_type} (v${predict.data.model_version})`}
               />
               <PredictionExplanation factors={SAMPLE_PREDICTION_EXPLANATION} />
             </motion.div>

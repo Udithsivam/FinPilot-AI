@@ -11,21 +11,6 @@
  * production pages (e.g. the Dashboard).
  */
 
-export const SAMPLE_INSIGHTS = [
-  {
-    id: "1",
-    title: "Dining spend rose 18% this month",
-    description: "Eating Out is higher than your 3-month average.",
-    tone: "warning" as const,
-  },
-  {
-    id: "2",
-    title: "Consistent savings streak",
-    description: "You've saved more than 15% of income for 3 months running.",
-    tone: "success" as const,
-  },
-];
-
 export const SAMPLE_RECOMMENDATION = {
   title: "Trim discretionary dining spend",
   detected: "Dining expenses are 22% higher than your average over the last 3 months.",

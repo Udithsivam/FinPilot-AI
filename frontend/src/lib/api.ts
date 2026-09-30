@@ -5,6 +5,7 @@ import type {
   Goal,
   GoalInput,
   HealthScoreResponse,
+  Insight,
   MonthlyBreakdown,
   ProfileUpdate,
   SavingsPredictionRequest,
@@ -95,6 +96,7 @@ export const api = {
   monthly: () => request<MonthlyBreakdown[]>("/analytics/monthly"),
   categories: () => request<CategoryAmount[]>("/analytics/categories"),
   healthScore: () => request<HealthScoreResponse>("/analytics/health-score"),
+  insights: () => request<Insight[]>("/analytics/insights"),
 
   predictSavings: (payload: SavingsPredictionRequest) =>
     request<SavingsPredictionResponse>("/predict/savings", {

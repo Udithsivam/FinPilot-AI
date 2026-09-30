@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -19,3 +21,9 @@ class MonthlyBreakdown(BaseModel):
     month: str  # "YYYY-MM"
     income: float
     expenses: float
+
+
+class Insight(BaseModel):
+    title: str
+    description: str
+    tone: Literal["success", "warning"]

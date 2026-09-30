@@ -82,7 +82,10 @@ def test_predict_savings_requires_auth(client):
 def test_predict_savings_returns_a_number(client, auth_headers):
     response = client.post("/predict/savings", json=VALID_PREDICTION_PAYLOAD, headers=auth_headers)
     assert response.status_code == 200
-    assert isinstance(response.json()["predicted_desired_savings"], float)
+    body = response.json()
+    assert isinstance(body["predicted_desired_savings"], float)
+    assert body["model_type"]
+    assert body["model_version"]
 
 
 def test_predict_savings_rejects_unknown_occupation(client, auth_headers):

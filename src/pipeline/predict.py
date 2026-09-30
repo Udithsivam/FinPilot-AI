@@ -4,6 +4,7 @@ Applies the same feature engineering used at training time before calling
 the fitted pipeline, so callers only need to supply raw record fields.
 """
 
+import hashlib
 from functools import lru_cache
 from pathlib import Path
 
@@ -36,6 +37,23 @@ def load_pipeline(path: Path = DEFAULT_PIPELINE_PATH):
 
 def clear_pipeline_cache() -> None:
     _load_pipeline_cached.cache_clear()
+    get_model_metadata.cache_clear()
+
+
+@lru_cache(maxsize=4)
+def get_model_metadata(path: Path = DEFAULT_PIPELINE_PATH) -> dict:
+    """Identify the currently-loaded model artifact.
+
+    `model_version` is the artifact file's own content hash (the same
+    identity DVC tracks in dvc.lock) — not an MLflow registry version.
+    There is no MLflow-backed serving yet (see README), so this is
+    deliberately the honest, verifiable thing to expose: which exact
+    file is answering this request, and what algorithm it is.
+    """
+    pipeline = load_pipeline(path)
+    model_type = type(pipeline.named_steps["model"]).__name__
+    file_hash = hashlib.md5(Path(path).read_bytes(), usedforsecurity=False).hexdigest()[:8]
+    return {"model_type": model_type, "model_version": file_hash}
 
 
 def predict_savings(record: dict, pipeline=None) -> float:

@@ -89,6 +89,12 @@ export interface MonthlyBreakdown {
   expenses: number;
 }
 
+export interface Insight {
+  title: string;
+  description: string;
+  tone: "success" | "warning";
+}
+
 export type HealthRating = "Good" | "Moderate" | "Low" | "High" | "Not Enough Data";
 
 export interface HealthScoreFactor {
@@ -125,4 +131,6 @@ export interface SavingsPredictionRequest {
 
 export interface SavingsPredictionResponse {
   predicted_desired_savings: number;
+  model_type: string;
+  model_version: string;
 }

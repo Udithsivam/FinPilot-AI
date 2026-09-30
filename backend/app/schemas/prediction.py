@@ -24,3 +24,5 @@ class SavingsPredictionRequest(BaseModel):
 
 class SavingsPredictionResponse(BaseModel):
     predicted_desired_savings: float
+    model_type: str
+    model_version: str

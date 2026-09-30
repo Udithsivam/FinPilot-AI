@@ -99,8 +99,15 @@ fabricated ML output as real, so:
   `predicted_desired_savings` number from `POST /predict/savings`
   (already a real, trained-model endpoint) and defaults `sample` to
   `false`.
+- `AIInsightCard` is the other exception on the AI Insights page: its
+  "Recent insights" section is wired to `GET /analytics/insights`
+  (rule-based — month-over-month category changes, savings-rate
+  streaks, computed from the user's own transactions) and passes
+  `sample={false}`. Recommendation/Anomaly/Explanation on that same
+  page remain sample data, since categorization/anomaly
+  detection/recommendations/explainability aren't implemented.
 
-When Phase 5 intelligence features are built, wire their real API
+When more Phase 5 intelligence features are built, wire their real API
 responses into these same components and drop the `sample` prop (or
 set it to `false`) — don't build new components for it.
 

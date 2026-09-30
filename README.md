@@ -22,10 +22,13 @@ pipeline. Defaults to SQLite locally; point `DATABASE_URL` at Postgres
 for production.
 
 **Phase 5 — Intelligence (paused):** started with the Financial
-Health Score (`GET /analytics/health-score`) — a rule-based, explainable
-score built from the user's own transactions/budgets/goals. Remaining
-Phase 5 work (categorization, forecasting, anomaly detection,
-recommendations, explainability) is paused in favor of frontend work.
+Health Score (`GET /analytics/health-score`) and rule-based Insights
+(`GET /analytics/insights` — month-over-month category changes and
+savings-rate streaks, computed directly from a user's own transactions,
+no ML model). Remaining Phase 5 work (categorization, forecasting,
+anomaly detection, recommendations, real explainability) is paused —
+the AI Insights page shows these as clearly-labeled "Sample" previews,
+not real output.
 
 **Phase 6 — Frontend (done):** a React + TypeScript + Vite app
 (`frontend/`) with the full design system, app shell (sidebar/header/
@@ -48,6 +51,19 @@ default, per-IP rate limiting on `/auth/login` and `/auth/register`,
 and in-process caching for the ML pipeline (previously re-read from
 disk on every single `/predict/savings` call). 25 new tests. See
 "Known limitations" below for what's flagged but not fixed.
+
+**Pre-review stabilization pass (done):** fixed a live correctness bug
+where budget-vs-transaction category matching was exact-string
+(`"Groceries"` didn't match `"groceries"`), normalized it at query time
+(case/whitespace-insensitive SQL comparison); added executable
+cross-user data-isolation regression tests for transactions, budgets
+and goals (the scoping code was already correct, now it's proven by a
+test, not just inspection); added `model_type`/`model_version` to the
+`/predict/savings` response (the artifact's own content hash — not an
+MLflow-registry version, since nothing reads from the registry at
+serving time yet, see MLOps section below); added a deterministic demo
+data seed script (`scripts/seed_demo_data.py`). 71 tests total
+(`python -m pytest -q`), all passing.
 
 ### Known limitations (flagged, not fixed)
 
@@ -143,6 +159,42 @@ browse runs and registered model versions:
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 
+## MLOps: what's actually implemented vs. planned
+
+To avoid overstating the pipeline's maturity, here's the lifecycle
+described in the original project brief, marked honestly:
+
+| Stage | Status | Detail |
+|---|---|---|
+| Data validation | **Implemented** | `src/data/validate_data.py`, run in the training pipeline |
+| Preprocessing / feature engineering | **Implemented** | `src/features/`, shared identically between training and inference (`src/pipeline/predict.py` imports the same function) |
+| Training | **Implemented** | `src/pipeline/train.py`, `dvc repro` |
+| Evaluation | **Implemented** | `reports/training_metrics.json`, 4 candidate models compared by R² |
+| Experiment tracking | **Implemented** | MLflow, `src/pipeline/tracking.py` |
+| Model registry | **Demonstration-ready** | MLflow's registry is populated on every training run (`finpilot-savings-predictor`), but nothing at serving time reads from it — see next row |
+| Deployment / serving | **Implemented, but file-based, not registry-based** | `backend/app/api/predictions.py` loads a fixed path (`models/savings_prediction_pipeline.pkl`, DVC-tracked) via `src/pipeline/predict.py`, cached in-process. The response's `model_version` is this file's own content hash, not an MLflow model-version number |
+| Monitoring / drift detection | **Planned** | Not built |
+| Feedback-driven retraining | **Planned** | Not built — there's no predictions table yet to retrain against |
+| Controlled model promotion | **Planned** | Not built |
+
+In one sentence: **MLflow tracks and registers every training run, but the API does not currently serve "whatever MLflow says is Production" — it serves whatever file is on disk, and that file happens to also be DVC-tracked and MLflow-registered.** Closing that gap (registry-backed serving) is real, scoped future work, not a lie to paper over — see the backend/ML integration audit findings for the reasoning.
+
+## Demo data
+
+```
+# with the backend running (uvicorn backend.app.main:app)
+python -m scripts.seed_demo_data
+```
+
+Registers/logs in a `demo@finpilot.ai` user (password `DemoPass123!`,
+both printed by the script) via the real public API — no direct DB
+writes — and seeds 3 months of clearly-synthetic transactions, 3
+budgets and 2 goals via the same endpoints a real client uses.
+Deterministic (fixed random seed); safe to re-run. See
+`scripts/seed_demo_data.py` for exactly what it creates — nothing here
+is real financial data, and no seed script should ever be pointed at a
+production database.
+
 ## Inference
 
 ```python
@@ -196,8 +248,11 @@ GET /analytics/dashboard
 GET /analytics/monthly
 GET /analytics/categories
 GET /analytics/health-score  (rule-based, explainable financial health score)
+GET /analytics/insights     (rule-based: category spend changes, savings streaks)
 
-POST /predict/savings       (uses the Phase 2/3 trained pipeline)
+POST /predict/savings       (uses the Phase 2/3 trained pipeline; response
+                             includes model_type and model_version — the
+                             deployed artifact's own content hash)
 
 GET /health
 GET /metrics                (Prometheus format)
