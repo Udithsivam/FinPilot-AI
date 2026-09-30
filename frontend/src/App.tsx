@@ -1,4 +1,4 @@
-import { Settings, TrendingUp } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/AppShell";
@@ -12,6 +12,7 @@ import { Goals } from "@/pages/Goals";
 import { Landing } from "@/pages/Landing";
 import { Login } from "@/pages/Login";
 import { Onboarding } from "@/pages/Onboarding";
+import { Predictions } from "@/pages/Predictions";
 import { Register } from "@/pages/Register";
 import { Transactions } from "@/pages/Transactions";
 
@@ -43,16 +44,7 @@ function App() {
         <Route path="/goals" element={<Goals />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/insights" element={<AIInsights />} />
-        <Route
-          path="/predictions"
-          element={
-            <ComingSoon
-              icon={TrendingUp}
-              title="Predictions"
-              description="A dedicated savings-prediction workspace is coming next."
-            />
-          }
-        />
+        <Route path="/predictions" element={<Predictions />} />
         <Route
           path="/settings"
           element={<ComingSoon icon={Settings} title="Settings" description="Profile and preferences." />}
