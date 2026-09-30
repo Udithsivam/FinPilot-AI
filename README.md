@@ -15,11 +15,17 @@ with a single pipeline shared by training and inference.
 experiment tracking and a model registry, wired into the same training
 pipeline via `dvc.yaml`.
 
-**Phase 4 — Backend (in progress):** a FastAPI + SQLAlchemy backend
+**Phase 4 — Backend (done):** a FastAPI + SQLAlchemy backend
 (`backend/`) with auth, user profiles, transactions, budgets, goals,
 analytics, and a savings-prediction endpoint backed by the Phase 2/3
 pipeline. Defaults to SQLite locally; point `DATABASE_URL` at Postgres
 for production.
+
+**Phase 5 — Intelligence (in progress):** started with the Financial
+Health Score (`GET /analytics/health-score`) — a rule-based, explainable
+score built from the user's own transactions/budgets/goals. Remaining
+Phase 5 work (categorization, forecasting, anomaly detection,
+recommendations, explainability) is not built yet.
 
 ## Project layout
 
@@ -153,6 +159,7 @@ DELETE /goals/{id}
 GET /analytics/dashboard
 GET /analytics/monthly
 GET /analytics/categories
+GET /analytics/health-score  (rule-based, explainable financial health score)
 
 POST /predict/savings       (uses the Phase 2/3 trained pipeline)
 
