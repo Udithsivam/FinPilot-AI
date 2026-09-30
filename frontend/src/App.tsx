@@ -1,8 +1,9 @@
-import { Settings, Sparkles, TrendingUp } from "lucide-react";
+import { Settings, TrendingUp } from "lucide-react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AIInsights } from "@/pages/AIInsights";
 import { Analytics } from "@/pages/Analytics";
 import { Budgets } from "@/pages/Budgets";
 import { ComingSoon } from "@/pages/ComingSoon";
@@ -41,16 +42,7 @@ function App() {
         <Route path="/budgets" element={<Budgets />} />
         <Route path="/goals" element={<Goals />} />
         <Route path="/analytics" element={<Analytics />} />
-        <Route
-          path="/insights"
-          element={
-            <ComingSoon
-              icon={Sparkles}
-              title="AI Insights"
-              description="Transaction categorization, anomaly detection and recommendations land in a future phase."
-            />
-          }
-        />
+        <Route path="/insights" element={<AIInsights />} />
         <Route
           path="/predictions"
           element={
