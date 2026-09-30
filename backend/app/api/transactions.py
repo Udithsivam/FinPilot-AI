@@ -6,8 +6,9 @@ from backend.app.database.session import get_db
 from backend.app.models.transaction import Transaction
 from backend.app.models.user import User
 from backend.app.schemas.prediction import CategorizeRequest, CategorizeResponse
-from backend.app.schemas.transaction import TransactionCreate, TransactionOut
+from backend.app.schemas.transaction import SemanticSearchResult, TransactionCreate, TransactionOut
 from backend.app.services.prediction_service import record_prediction
+from backend.app.services.search_service import semantic_search_for_user
 from src.categorization.predict import categorize_transaction
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
@@ -45,6 +46,19 @@ def categorize_transaction_endpoint(
     )
 
     return CategorizeResponse(prediction_id=prediction.id, **result)
+
+
+@router.get("/search", response_model=list[SemanticSearchResult])
+def search_transactions_endpoint(
+    q: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Semantic search over the authenticated user's own transactions
+    (TF-IDF + cosine similarity — see src/search/semantic_search.py).
+    Always scoped to current_user.id; never returns another user's
+    transactions."""
+    return semantic_search_for_user(db, current_user.id, q)
 
 
 @router.post("", response_model=TransactionOut, status_code=status.HTTP_201_CREATED)

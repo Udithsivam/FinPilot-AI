@@ -103,14 +103,70 @@ stages:
       size: 4541
     - path: src/categorization/train.py
       hash: md5
-      md5: 7e78a1a8e622c04c81a65470542ac26f
-      size: 5733
+      md5: 15596f33673297595eb52bdd27cf31a0
+      size: 8280
     outs:
     - path: models/transaction_categorizer_pipeline.pkl
       hash: md5
-      md5: da74637e17916d6dd0b387f5067334d3
-      size: 341308
+      md5: fbb1baed96ab43a68f6bd00cb9349076
+      size: 861118
     - path: reports/categorization_metrics.json
       hash: md5
-      md5: 0245de58fe589a852faa9f52943e5ef3
-      size: 6571
+      md5: 53070cc88e5b900eb6874235ba63db4c
+      size: 7046
+  forecast_train:
+    cmd: python -m src.forecasting.train
+    deps:
+    - path: data/raw/finpilot_transactions.csv
+      hash: md5
+      md5: 1f45354c921b268b196185e663d4b1d8
+      size: 714993
+    - path: src/categorization/taxonomy.py
+      hash: md5
+      md5: 7a2ba3a962c23e71f4c21ac85978b7f3
+      size: 4541
+    - path: src/forecasting/features.py
+      hash: md5
+      md5: 2f8578683fefea9e455e653770294b23
+      size: 4403
+    - path: src/forecasting/train.py
+      hash: md5
+      md5: 150e78054acc4e52b51f65f341a9ff7a
+      size: 7772
+    outs:
+    - path: models/expense_forecast_pipeline.pkl
+      hash: md5
+      md5: 214852cd8fe4be72a0db94d70cf1b3c0
+      size: 776906
+    - path: reports/expense_forecast_metrics.json
+      hash: md5
+      md5: 362695399088a98ba8a0c20a1ca3f267
+      size: 1178
+  cashflow_train:
+    cmd: python -m src.cashflow.train
+    deps:
+    - path: data/raw/finpilot_transactions.csv
+      hash: md5
+      md5: 1f45354c921b268b196185e663d4b1d8
+      size: 714993
+    - path: src/cashflow/features.py
+      hash: md5
+      md5: 28715da7aba68f4b654314551d7bca4f
+      size: 4893
+    - path: src/cashflow/train.py
+      hash: md5
+      md5: 348be2be9bbe78b19d860ecb3590c43f
+      size: 8586
+    - path: src/categorization/taxonomy.py
+      hash: md5
+      md5: 7a2ba3a962c23e71f4c21ac85978b7f3
+      size: 4541
+    outs:
+    - path: models/cashflow_forecast_pipeline.pkl
+      hash: md5
+      md5: 579c33d91168273cdeac4a1c0bb198aa
+      size: 1695306
+    - path: reports/cashflow_forecast_metrics.json
+      hash: md5
+      md5: 9944e4c5166fbd8cfe5d97302cd99d80
+      size: 2423

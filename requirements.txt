@@ -8,6 +8,7 @@ seaborn>=0.13.2
 pytest>=9.1.1
 dvc>=3.67.1
 mlflow>=3.16.1
+xgboost>=3.0.0
 
 fastapi>=0.115
 uvicorn[standard]>=0.32

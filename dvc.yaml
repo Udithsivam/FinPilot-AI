@@ -29,3 +29,29 @@ stages:
     metrics:
       - reports/categorization_metrics.json:
           cache: false
+
+  forecast_train:
+    cmd: python -m src.forecasting.train
+    deps:
+      - data/raw/finpilot_transactions.csv
+      - src/categorization/taxonomy.py
+      - src/forecasting/features.py
+      - src/forecasting/train.py
+    outs:
+      - models/expense_forecast_pipeline.pkl
+    metrics:
+      - reports/expense_forecast_metrics.json:
+          cache: false
+
+  cashflow_train:
+    cmd: python -m src.cashflow.train
+    deps:
+      - data/raw/finpilot_transactions.csv
+      - src/categorization/taxonomy.py
+      - src/cashflow/features.py
+      - src/cashflow/train.py
+    outs:
+      - models/cashflow_forecast_pipeline.pkl
+    metrics:
+      - reports/cashflow_forecast_metrics.json:
+          cache: false

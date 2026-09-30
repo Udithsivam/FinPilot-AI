@@ -1,0 +1,45 @@
+{
+  "dataset": "data/raw/finpilot_transactions.csv (synthetic)",
+  "split": "chronological by target month",
+  "n_train": 160,
+  "n_val": 40,
+  "n_test": 40,
+  "xgboost_available": true,
+  "selected_model": "RandomForestRegressor",
+  "baseline": {
+    "method": "2-month historical moving average",
+    "val": {
+      "mae": 7365.430124999999,
+      "rmse": 8693.691989924611,
+      "mape": 18.110706793472016
+    },
+    "test": {
+      "mae": 8052.947499999999,
+      "rmse": 9067.695591360367,
+      "mape": 20.191268595078064
+    }
+  },
+  "candidates": {
+    "RandomForestRegressor": {
+      "mae": 6403.219585025606,
+      "rmse": 8186.143152941771,
+      "mape": 15.408758400400563
+    },
+    "GradientBoostingRegressor": {
+      "mae": 6922.255424108464,
+      "rmse": 8801.895267109685,
+      "mape": 16.135640792769966
+    },
+    "XGBRegressor": {
+      "mae": 7001.915189453124,
+      "rmse": 8919.754303458265,
+      "mape": 16.22105301935049
+    }
+  },
+  "selected_model_test_metrics": {
+    "mae": 7513.639404832327,
+    "rmse": 9156.142773347567,
+    "mape": 20.608291488285026
+  },
+  "beats_baseline_on_test_mae": true
+}

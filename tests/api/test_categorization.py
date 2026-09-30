@@ -11,6 +11,7 @@ def test_categorize_returns_valid_category(client, auth_headers):
     assert 0.0 <= body["confidence"] <= 1.0
     assert body["model_version"]
     assert isinstance(body["prediction_id"], int)
+    assert isinstance(body["needs_review"], bool)
 
 
 def test_categorize_low_confidence_for_generic_text(client, auth_headers):
@@ -22,7 +23,10 @@ def test_categorize_low_confidence_for_generic_text(client, auth_headers):
         headers=auth_headers,
     )
     assert response.status_code == 200
-    assert response.json()["confidence"] < 0.9
+    body = response.json()
+    assert body["confidence"] < 0.9
+    if body["confidence"] < 0.5:
+        assert body["needs_review"] is True
 
 
 def test_categorize_persists_a_prediction(client, auth_headers):

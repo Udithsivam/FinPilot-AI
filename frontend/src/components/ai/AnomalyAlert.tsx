@@ -4,15 +4,21 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 
 interface AnomalyAlertProps {
-  category: string;
+  merchant: string | null;
   amount: number;
-  typicalRange: string;
+  category: string;
+  reason: string;
+  severity: "low" | "medium" | "high";
   date: string;
-  /** Anomaly detection isn't implemented on the backend yet — defaults true. */
-  sample?: boolean;
 }
 
-export function AnomalyAlert({ category, amount, typicalRange, date, sample = true }: AnomalyAlertProps) {
+const SEVERITY_LABEL: Record<AnomalyAlertProps["severity"], string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+};
+
+export function AnomalyAlert({ merchant, amount, category, reason, severity, date }: AnomalyAlertProps) {
   return (
     <div className="flex items-start gap-3 rounded-xl border border-warning-subtle bg-warning-subtle/40 p-4">
       <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-warning-subtle text-warning-subtle-foreground">
@@ -20,13 +26,18 @@ export function AnomalyAlert({ category, amount, typicalRange, date, sample = tr
       </div>
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium">Unusual {category} spending</p>
-          {sample && <Badge variant="outline">Sample</Badge>}
+          <p className="text-sm font-medium">
+            {merchant ? `${merchant} — ` : ""}
+            {category}
+          </p>
+          <Badge variant="outline" className="capitalize">
+            {SEVERITY_LABEL[severity]} severity
+          </Badge>
         </div>
         <p className="text-sm text-muted-foreground">
-          {formatCurrency(amount)} on {new Date(date).toLocaleDateString()} — well above your typical{" "}
-          {typicalRange}.
+          {formatCurrency(amount)} on {new Date(date).toLocaleDateString()}
         </p>
+        <p className="text-sm text-muted-foreground">{reason}</p>
       </div>
     </div>
   );

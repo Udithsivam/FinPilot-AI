@@ -26,6 +26,7 @@ import joblib
 import mlflow
 import mlflow.sklearn
 import pandas as pd
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -36,6 +37,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.svm import LinearSVC
 
 from src.categorization.features import build_text_feature
 from src.pipeline.tracking import current_git_commit
@@ -81,21 +83,64 @@ def run_training() -> dict:
     X_train, X_test, y_train, y_test = train_test_split(
         text, expense["label"], test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=expense["label"]
     )
-
-    pipeline = Pipeline(
-        steps=[
-            ("tfidf", TfidfVectorizer(max_features=2000, ngram_range=(1, 2))),
-            ("model", LogisticRegression(max_iter=1000, random_state=RANDOM_STATE)),
-        ]
-    )
-    pipeline.fit(X_train, y_train)
-    predictions = pipeline.predict(X_test)
-
-    accuracy = accuracy_score(y_test, predictions)
-    precision, recall, f1, _ = precision_recall_fscore_support(
-        y_test, predictions, average="macro", zero_division=0
-    )
     labels = sorted(expense["label"].unique())
+
+    # Two candidates over the same TF-IDF features: the existing
+    # LogisticRegression baseline, and LinearSVC (wrapped in
+    # CalibratedClassifierCV so it can still expose predict_proba, which
+    # src/categorization/predict.py's confidence score and needs_review
+    # flag depend on). Selection is by macro-F1 on the held-out test set,
+    # not by which algorithm sounds more advanced — see README for why a
+    # full sentence-transformer embedding classifier was not adopted
+    # (heavy new dependency, no meaningful gain expected on a small
+    # 16-class synthetic vocabulary).
+    candidates = {
+        "LogisticRegression": Pipeline(
+            steps=[
+                ("tfidf", TfidfVectorizer(max_features=2000, ngram_range=(1, 2))),
+                ("model", LogisticRegression(max_iter=1000, random_state=RANDOM_STATE)),
+            ]
+        ),
+        "LinearSVC_calibrated": Pipeline(
+            steps=[
+                ("tfidf", TfidfVectorizer(max_features=2000, ngram_range=(1, 2))),
+                (
+                    "model",
+                    CalibratedClassifierCV(
+                        LinearSVC(random_state=RANDOM_STATE, max_iter=5000), method="sigmoid", cv=3
+                    ),
+                ),
+            ]
+        ),
+    }
+
+    candidate_results = {}
+    for name, candidate_pipeline in candidates.items():
+        candidate_pipeline.fit(X_train, y_train)
+        candidate_predictions = candidate_pipeline.predict(X_test)
+        c_accuracy = accuracy_score(y_test, candidate_predictions)
+        c_precision, c_recall, c_f1, _ = precision_recall_fscore_support(
+            y_test, candidate_predictions, average="macro", zero_division=0
+        )
+        candidate_results[name] = {
+            "pipeline": candidate_pipeline,
+            "predictions": candidate_predictions,
+            "metrics": {
+                "accuracy": c_accuracy,
+                "macro_precision": c_precision,
+                "macro_recall": c_recall,
+                "macro_f1": c_f1,
+            },
+        }
+
+    best_name = max(candidate_results, key=lambda n: candidate_results[n]["metrics"]["macro_f1"])
+    pipeline = candidate_results[best_name]["pipeline"]
+    predictions = candidate_results[best_name]["predictions"]
+    accuracy = candidate_results[best_name]["metrics"]["accuracy"]
+    precision = candidate_results[best_name]["metrics"]["macro_precision"]
+    recall = candidate_results[best_name]["metrics"]["macro_recall"]
+    f1 = candidate_results[best_name]["metrics"]["macro_f1"]
+
     conf_matrix = confusion_matrix(y_test, predictions, labels=labels).tolist()
     report = classification_report(y_test, predictions, labels=labels, zero_division=0, output_dict=True)
 
@@ -107,6 +152,8 @@ def run_training() -> dict:
         "n_train": len(X_train),
         "n_test": len(X_test),
         "n_classes": len(labels),
+        "selected_model": best_name,
+        "candidates": {name: r["metrics"] for name, r in candidate_results.items()},
         "labels": labels,
         "confusion_matrix": conf_matrix,
         "per_class_report": report,
@@ -136,6 +183,12 @@ def run_training() -> dict:
                 "random_state": RANDOM_STATE,
             }
         )
+        for name, result in candidate_results.items():
+            with mlflow.start_run(run_name=name, nested=True):
+                mlflow.log_param("model_type", name)
+                mlflow.log_metrics(result["metrics"])
+
+        mlflow.set_tag("selected_model", best_name)
         mlflow.log_metrics(
             {
                 "accuracy": accuracy,

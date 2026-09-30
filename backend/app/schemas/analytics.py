@@ -39,3 +39,16 @@ class Recommendation(BaseModel):
     action: str
     priority: Literal["high", "medium", "low"]
     created_at: dt.datetime
+
+
+class AnomalyTransaction(BaseModel):
+    transaction_id: int
+    merchant: str | None
+    amount: float
+    category: str
+    date: str
+    method: Literal["statistical_zscore", "isolation_forest", "statistical_zscore+isolation_forest"]
+    anomaly_score: float
+    severity: Literal["low", "medium", "high"]
+    reason: str
+    expected_range: str | None

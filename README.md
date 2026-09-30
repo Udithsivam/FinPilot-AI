@@ -21,14 +21,28 @@ analytics, and a savings-prediction endpoint backed by the Phase 2/3
 pipeline. Defaults to SQLite locally; point `DATABASE_URL` at Postgres
 for production.
 
-**Phase 5 — Intelligence (paused):** started with the Financial
-Health Score (`GET /analytics/health-score`) and rule-based Insights
-(`GET /analytics/insights` — month-over-month category changes and
-savings-rate streaks, computed directly from a user's own transactions,
-no ML model). Remaining Phase 5 work (categorization, forecasting,
-anomaly detection, recommendations, real explainability) is paused —
-the AI Insights page shows these as clearly-labeled "Sample" previews,
-not real output.
+**Phase 5 — Intelligence (done):** Financial Health Score
+(`GET /analytics/health-score`), rule-based Insights and Recommendations
+(computed directly from a user's own transactions/budgets, not ML),
+real transaction categorization (TF-IDF/embedding classifier benchmark),
+expense and cash-flow forecasting, anomaly detection, semantic
+transaction search, and prediction explainability. See "Intelligence &
+ML" below for what's real vs. explicitly not built.
+
+**Phase 7 — RAG + LLM assistant (done, with a documented limitation):**
+a curated financial-knowledge base, TF-IDF retrieval, and a grounded
+`POST /ai/chat` endpoint that combines retrieved knowledge with the
+user's own data and real model outputs. No LLM API key is configured in
+this environment, so the "LLM" step is an honest deterministic
+extractive/template synthesizer, not a generative model — see "RAG &
+Financial Assistant" below.
+
+**Phase 8 — MLOps lifecycle (done):** MLflow model registry with an
+explicit candidate → validated → production → archived lifecycle,
+promotion/rollback, prediction-performance monitoring, feature-drift
+detection (Kolmogorov-Smirnov), and a feedback-driven retraining script.
+Admin-gated via the `ADMIN_EMAILS` environment variable (no schema
+migration required). See "MLOps" below.
 
 **Phase 6 — Frontend (done):** a React + TypeScript + Vite app
 (`frontend/`) with the full design system, app shell (sidebar/header/
@@ -77,22 +91,63 @@ data seed script (`scripts/seed_demo_data.py`). 71 tests total
 - The ML pipeline cache means a newly retrained model isn't picked up
   until the API process restarts or `clear_pipeline_cache()` is called
   — there's no automatic invalidation hook from the training/DVC side yet.
+- **No LLM provider is configured.** `POST /ai/chat` retrieves real
+  knowledge and real user data/predictions, but the "answer" is
+  assembled by a deterministic template (`ExtractiveProvider`), not a
+  generative model — see "RAG & Financial Assistant".
+- **RAG/semantic search use TF-IDF, not sentence-transformer
+  embeddings.** `sentence-transformers` pulls in a multi-GB `torch`
+  dependency; for a ~50-chunk knowledge base and per-user transaction
+  search at this scale, the retrieval-quality difference wouldn't be
+  visible, so TF-IDF + cosine similarity (already available via
+  scikit-learn) was used instead. Swapping in a real embedding model
+  only requires changing `src/rag/retrieval.py` / `src/search/`.
+- **`Feedback` has no direct foreign key to `Transaction`** (only to
+  `Prediction`, which doesn't store the original merchant/description
+  text). `scripts/retrain_from_feedback.py` works around this by using
+  the corrected category name itself as a weak text signal, rather than
+  the transaction's real text — a real, documented gap, not silently
+  hidden.
+- **No is_admin column on `User`.** Admin-gated endpoints
+  (`/monitoring/*`, `/mlops/*`) check an `ADMIN_EMAILS` environment
+  variable instead, to avoid an Alembic-style migration this project
+  deliberately doesn't have.
+- **No automatic outcome collection for prediction-performance
+  monitoring.** `PATCH /predictions/{id}/actual` lets a user record a
+  real later-known outcome, but nothing does this automatically (e.g.
+  next month's real expense isn't known until that month closes) — with
+  no actuals recorded, `/monitoring/performance` honestly reports
+  `insufficient_data` rather than a fabricated metric.
+- XGBoost was added and benchmarked for expense/cash-flow forecasting;
+  LightGBM/CatBoost and sentence-transformers were evaluated and
+  deliberately not added (see "Model selection" below) given the
+  dataset's small size and this project's dependency-footprint goals.
 
 ## Project layout
 
 ```
-data/raw/            raw input data (DVC-tracked, see data/raw/data.csv.dvc)
-src/data/            data loading and validation
-src/features/        feature engineering
-src/pipeline/         shared preprocessing, training, MLflow tracking and inference
-src/training/         candidate model definitions and training loop
-src/evaluation/       evaluation metrics
+data/raw/              data.csv (savings, original), finpilot_*.csv (SYNTHETIC transactions)
+data/knowledge/        curated RAG knowledge-base documents (markdown + YAML frontmatter)
+src/data/              data loading and validation
+src/features/          feature engineering (savings prediction)
+src/pipeline/          shared preprocessing, training, MLflow tracking, inference, explainability
+src/training/          candidate model definitions and training loop
+src/evaluation/        evaluation metrics
+src/categorization/    transaction categorization (taxonomy, features, train, predict)
+src/forecasting/       expense forecasting (features, train, predict)
+src/cashflow/          cash-flow forecasting (features, train, predict)
+src/anomaly/           anomaly detection (statistical + IsolationForest)
+src/search/            semantic transaction search (TF-IDF)
+src/rag/               knowledge base, retrieval, LLM provider abstraction, assistant, evaluation
+src/monitoring/        prediction-performance and drift-detection logic
+src/registry/          MLflow model-registry lifecycle (candidate/validated/production/archived)
+scripts/               dataset generation, demo seeding, feedback-driven retraining
 models/                trained model artifacts (DVC-tracked)
-reports/               training metrics reports
-params.yaml            pipeline configuration
-dvc.yaml / dvc.lock    DVC pipeline definition
+reports/               metrics reports per model + RAG retrieval evaluation
+params.yaml            savings-prediction pipeline configuration
+dvc.yaml / dvc.lock    DVC pipeline definition (5 stages)
 backend/app/           FastAPI application (see Backend section below)
-tests/unit/            unit tests for data validation and feature engineering
+tests/unit/            unit tests for ML/NLP/monitoring/registry logic
 tests/api/             API tests for the FastAPI backend
 ```
 
@@ -144,10 +199,53 @@ stand-in for a real remote (S3/GCS/Azure Blob) — swap the remote URL
 for one of those in production.
 
 ```
-dvc pull   # fetch data.csv and the model artifact from the remote
+dvc pull   # fetch data.csv and the model artifacts from the remote
 dvc push   # publish newly generated artifacts to the remote
-dvc repro  # rerun the training stage if its inputs changed
+dvc repro  # rerun any stage whose inputs changed
 ```
+
+Five stages, each independently reproducible:
+
+```
+train              savings prediction   (data/raw/data.csv)
+categorize_train   categorization       (data/raw/finpilot_transactions.csv)
+forecast_train     expense forecasting  (data/raw/finpilot_transactions.csv)
+cashflow_train     cash-flow forecasting (data/raw/finpilot_transactions.csv)
+```
+
+To regenerate the synthetic transaction dataset itself (deterministic,
+fixed seed — see "Synthetic transaction dataset" below):
+
+```
+python -m scripts.generate_transaction_data
+```
+
+To run the feedback-driven retraining pipeline for the categorizer
+(pulls validated `category_correction` feedback, retrains, logs a new
+MLflow **candidate** — never auto-promoted):
+
+```
+python -m scripts.retrain_from_feedback
+```
+
+To re-run the RAG retrieval evaluation (`reports/rag_retrieval_evaluation.json`):
+
+```
+python -m src.rag.evaluation
+```
+
+## Synthetic transaction dataset
+
+`data/raw/finpilot_users.csv` and `data/raw/finpilot_transactions.csv`
+are a **synthetic transaction dataset designed to reproduce realistic
+personal-finance transaction patterns for development and ML
+experimentation** — generated deterministically (`SEED=7`, 40 users, 8
+months, ~6,905 transactions, `scripts/generate_transaction_data.py`),
+with ~18% of descriptions deliberately generic/uninformative to mirror
+real bank-statement ambiguity. This is **not real customer banking
+data**, and it is a separate dataset from `data/raw/data.csv` (the
+original savings-prediction dataset, 20,000 rows, unmodified, still the
+sole source for `/predict/savings`).
 
 ## Experiment tracking and model registry (MLflow)
 
@@ -168,16 +266,78 @@ described in the original project brief, marked honestly:
 |---|---|---|
 | Data validation | **Implemented** | `src/data/validate_data.py`, run in the training pipeline |
 | Preprocessing / feature engineering | **Implemented** | `src/features/`, shared identically between training and inference (`src/pipeline/predict.py` imports the same function) |
-| Training | **Implemented** | `src/pipeline/train.py`, `dvc repro` |
-| Evaluation | **Implemented** | `reports/training_metrics.json`, 4 candidate models compared by R² |
-| Experiment tracking | **Implemented** | MLflow, `src/pipeline/tracking.py` |
-| Model registry | **Demonstration-ready** | MLflow's registry is populated on every training run (`finpilot-savings-predictor`), but nothing at serving time reads from it — see next row |
-| Deployment / serving | **Implemented, but file-based, not registry-based** | `backend/app/api/predictions.py` loads a fixed path (`models/savings_prediction_pipeline.pkl`, DVC-tracked) via `src/pipeline/predict.py`, cached in-process. The response's `model_version` is this file's own content hash, not an MLflow model-version number |
-| Monitoring / drift detection | **Planned** | Not built |
-| Feedback-driven retraining | **Planned** | Not built — there's no predictions table yet to retrain against |
-| Controlled model promotion | **Planned** | Not built |
+| Training | **Implemented** | `src/pipeline/train.py`, `src/categorization/train.py`, `src/forecasting/train.py`, `src/cashflow/train.py`, all via `dvc repro` |
+| Evaluation | **Implemented** | `reports/*_metrics.json` per model, candidates compared on a held-out validation/test split |
+| Experiment tracking | **Implemented** | MLflow, one experiment per model family, nested runs per candidate |
+| Model registry | **Implemented** | `src/registry/model_registry.py` — an explicit `candidate → validated → production → archived` lifecycle on top of MLflow's registry (tracked as an MLflow version tag, `lifecycle_stage`) |
+| Registry-based serving | **Implemented, with a controlled fallback** | `load_production_model()` loads the MLflow-registered production version when one exists; otherwise it falls back to the local DVC-tracked `.pkl` and says so explicitly (`source: "local_fallback"` vs `"registry"`) — never silently one or the other |
+| Model promotion | **Implemented** | `POST /mlops/models/{name}/versions/{version}/promote` (admin-only), enforces the lifecycle state machine — e.g. `archived → production` is rejected |
+| Model rollback | **Implemented** | `POST /mlops/models/{name}/rollback` (admin-only) — restores a previously-archived version to production and archives the current one; no artifact is ever deleted |
+| Prediction-performance monitoring | **Implemented, honestly limited** | `GET /monitoring/performance` (admin-only) computes real MAE/RMSE/R² from predictions with a recorded actual outcome (`PATCH /predictions/{id}/actual`); reports `insufficient_data` otherwise, never a fabricated number |
+| Data drift detection | **Implemented** | `GET /monitoring/drift` (admin-only) — Kolmogorov-Smirnov test comparing the synthetic training distribution against real recorded transaction amounts |
+| Feedback-driven retraining | **Implemented as a manual, explicit step** | `python -m scripts.retrain_from_feedback` curates validated `category_correction` feedback, retrains, logs a new MLflow **candidate** version — it never auto-promotes |
+| MLOps dashboard | **Implemented** | `GET /mlops/summary` (admin-only) + the `/mlops` frontend page: registry state, performance, drift, feedback counts, RAG index stats |
 
-In one sentence: **MLflow tracks and registers every training run, but the API does not currently serve "whatever MLflow says is Production" — it serves whatever file is on disk, and that file happens to also be DVC-tracked and MLflow-registered.** Closing that gap (registry-backed serving) is real, scoped future work, not a lie to paper over — see the backend/ML integration audit findings for the reasoning.
+In one sentence: the original savings-prediction serving gap — **"MLflow tracks and registers every run, but nothing at serving time reads from it"** — is now closed for all four trainable models via `src/registry/model_registry.py`, with an explicit, tested promotion/rollback lifecycle and a controlled, clearly-labeled local fallback.
+
+## Intelligence & ML
+
+| Capability | Status | Notes |
+|---|---|---|
+| Savings prediction | **Implemented** | `GradientBoostingRegressor`, unchanged from Phase 2/3. Test: MAE 611.70, RMSE 2218.59, R² 0.9319 |
+| Transaction categorization | **Implemented** | TF-IDF features; benchmarked `LogisticRegression` vs `LinearSVC` (calibrated) — `LinearSVC_calibrated` selected on macro-F1 (0.8836 vs 0.8771). Returns a `needs_review` flag below a confidence threshold instead of a false-confidence guess |
+| Expense forecasting | **Implemented** | Monthly panel per user; chronological train/val/test split; baseline (2-month moving average) vs `RandomForestRegressor`/`GradientBoostingRegressor`/`XGBRegressor`, selected on validation MAE. `RandomForestRegressor` won even with XGBoost benchmarked (test MAE 7514 vs. baseline 8053) |
+| Cash-flow forecasting | **Implemented** | Same panel extended with income; two regressors (income, expense) trained separately, `net_cash_flow` derived from both so the three numbers are always internally consistent |
+| Anomaly detection | **Implemented** | Statistical z-score against the user's own per-category history (interpretable: "3.2x your typical X") + `IsolationForest` for multivariate patterns a single z-score misses. User-specific — never a global threshold |
+| Semantic transaction search | **Implemented** | TF-IDF + cosine similarity over one user's own transactions, rebuilt per request (no persistent index — see "Known limitations" for why not FAISS/embeddings) |
+| Recommendations | **Implemented** | Rule-based (budget utilization, category spend change, recurring-expense share, savings-rate drop) — real thresholds, not an LLM guess |
+| Explainability | **Implemented** | Savings prediction: real `feature_importances_` + directional heuristic (no SHAP — not installed, see `src/pipeline/explain.py`). Categorization: real `predict_proba` confidence + `needs_review`. Anomalies: a human-readable reason tied to a real ratio/score |
+
+### Model selection
+
+Every trainable model in this repo follows the same rule: **candidates are
+compared on a validation metric, and the winner is whichever number is
+actually best — never whichever algorithm sounds most advanced.**
+`XGBoost` was installed and benchmarked for both forecasting tasks;
+`RandomForestRegressor` still won expense forecasting even with XGBoost in
+the running. `LightGBM`/`CatBoost` were not added: with ~240 training
+rows for forecasting and 6,585 for categorization, an additional boosting
+library was judged very unlikely to move the metric enough to justify a
+third dependency, and this project's own instructions call for avoiding
+unnecessary architecture. `sentence-transformers` (for embedding-based
+categorization/RAG) was evaluated the same way and not adopted — see
+"Known limitations".
+
+## RAG & Financial Assistant
+
+`POST /ai/chat` combines three genuinely separate sources, never letting
+one pretend to be another (see `src/rag/assistant.py`):
+
+1. **User facts** — the caller's own structured data (dashboard totals,
+   top spending category, anomalies), fetched from the same services the
+   rest of the app uses. Never another user's data.
+2. **Model predictions** — real outputs of the trained models (expense/
+   cash-flow forecast), fetched the same way the Predictions page does.
+3. **General knowledge** — chunks retrieved from a curated knowledge base
+   at `data/knowledge/` (14 documents covering budgeting, emergency
+   funds, debt, credit utilization, savings, cash flow, goals, investing,
+   risk, insurance, terminology, and subscriptions — each with `source`/
+   `title`/`topic` metadata), retrieved via TF-IDF + cosine similarity
+   (`src/rag/retrieval.py`) and returned with numbered citations.
+
+The active `LLMProvider` (`src/rag/providers.py`) only *arranges* these
+three already-computed inputs into prose — with no `ANTHROPIC_API_KEY` or
+`OPENAI_API_KEY` configured in this environment, the active provider is
+`ExtractiveProvider`, a deterministic template, not a generative model, so
+there is nothing for it to hallucinate. Adding a real key later only
+requires implementing one more `LLMProvider` subclass; every caller
+depends on the interface, not a specific provider.
+
+**Retrieval evaluation** (`python -m src.rag.evaluation`,
+`reports/rag_retrieval_evaluation.json`): 12 hand-written questions with
+an expected source document, measuring Hit@4 — the last run scored
+**11/12 (91.7%)**. This measures retrieval only; there is no generated-
+answer faithfulness score, since there is no generative model to score.
 
 ## Demo data
 
@@ -247,19 +407,39 @@ DELETE /goals/{id}
 GET /analytics/dashboard
 GET /analytics/monthly
 GET /analytics/categories
-GET /analytics/health-score  (rule-based, explainable financial health score)
-GET /analytics/insights     (rule-based: category spend changes, savings streaks)
+GET /analytics/health-score   (rule-based, explainable financial health score)
+GET /analytics/insights       (rule-based: category spend changes, savings streaks)
+GET /analytics/recommendations (rule-based, real thresholds)
+GET /analytics/anomalies      (statistical z-score + IsolationForest, user-specific)
 
-POST /predict/savings       (uses the Phase 2/3 trained pipeline; response
-                             includes model_type and model_version — the
-                             deployed artifact's own content hash)
+POST /predict/savings         (savings prediction + real feature-importance explanation)
+GET  /predictions/history
+GET  /predictions/expenses    (next-month expense forecast)
+GET  /predictions/cash-flow   (next-month income/expense/net cash flow forecast)
+PATCH /predictions/{id}/actual (record a real later-known outcome, for monitoring)
+
+POST /transactions/categorize (TF-IDF/LinearSVC categorizer; confidence + needs_review)
+GET  /transactions/search     (semantic search over the caller's own transactions)
+
+POST /feedback                 (category corrections etc., ownership-validated)
+
+POST /ai/chat                  (grounded assistant — see "RAG & Financial Assistant")
+
+GET  /monitoring/performance   (admin-only: real MAE/RMSE/R² per model)
+GET  /monitoring/drift         (admin-only: Kolmogorov-Smirnov drift check)
+
+GET  /mlops/models/{name}/versions
+POST /mlops/models/{name}/versions/{version}/promote  (admin-only)
+POST /mlops/models/{name}/rollback                    (admin-only)
+GET  /mlops/summary            (admin-only — powers the /mlops frontend page)
 
 GET /health
-GET /metrics                (Prometheus format)
+GET /metrics                   (Prometheus format)
 ```
 
-Receipt OCR / bank statement import, AI categorization, recommendations
-and feedback endpoints are Phase 5 (Intelligence) work and not built yet.
+Admin-only endpoints are gated by the `ADMIN_EMAILS` environment
+variable (comma-separated emails), checked server-side against the
+authenticated user — see `backend/app/api/deps.py::get_current_admin`.
 
 ## Tests
 
@@ -267,9 +447,14 @@ and feedback endpoints are Phase 5 (Intelligence) work and not built yet.
 python -m pytest tests/
 ```
 
-`tests/unit/` covers the ML pipeline; `tests/api/` exercises the FastAPI
-backend end-to-end against an isolated in-memory/temp-file SQLite
-database (no real database needed to run them).
+`tests/unit/` covers the ML/NLP/monitoring/registry logic in isolation;
+`tests/api/` exercises the FastAPI backend end-to-end (including
+cross-user isolation on every new endpoint) against an isolated
+in-memory/temp-file SQLite database (no real database needed to run
+them). `tests/unit/test_model_registry.py` and
+`test_retrain_from_feedback.py` register real throwaway MLflow model
+versions per test for isolation, rather than mutating the shared
+`mlflow.db` used for manual demonstration.
 
 ## Note on `Desired_Savings_Percentage`
 

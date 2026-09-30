@@ -9,6 +9,7 @@ import { Dashboard } from "@/pages/Dashboard";
 import { Goals } from "@/pages/Goals";
 import { Landing } from "@/pages/Landing";
 import { Login } from "@/pages/Login";
+import { MLOps } from "@/pages/MLOps";
 import { Onboarding } from "@/pages/Onboarding";
 import { Predictions } from "@/pages/Predictions";
 import { Register } from "@/pages/Register";
@@ -45,6 +46,7 @@ function App() {
         <Route path="/insights" element={<AIInsights />} />
         <Route path="/predictions" element={<Predictions />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/mlops" element={<MLOps />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

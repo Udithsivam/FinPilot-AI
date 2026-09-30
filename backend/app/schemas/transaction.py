@@ -20,3 +20,13 @@ class TransactionOut(TransactionCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+
+
+class SemanticSearchResult(BaseModel):
+    transaction_id: int
+    merchant: str | None
+    description: str | None
+    category: str
+    amount: float
+    date: str
+    similarity: float

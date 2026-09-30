@@ -1,0 +1,89 @@
+{
+  "dataset": "data/raw/finpilot_transactions.csv (synthetic)",
+  "split": "chronological by target month",
+  "xgboost_available": true,
+  "income": {
+    "selected_model": "RandomForestRegressor",
+    "baseline": {
+      "method": "2-month historical moving average (rolling_income)",
+      "val": {
+        "mae": 1843.762249999999,
+        "rmse": 2679.8959823953514,
+        "mape": 3.029637988294127
+      },
+      "test": {
+        "mae": 2161.3201249999993,
+        "rmse": 3370.760444611404,
+        "mape": 3.2718947044978486
+      }
+    },
+    "candidates": {
+      "RandomForestRegressor": {
+        "mae": 2173.210135404178,
+        "rmse": 3157.3375797366994,
+        "mape": 4.033557696592012
+      },
+      "GradientBoostingRegressor": {
+        "mae": 2414.656533420709,
+        "rmse": 3824.5945789547727,
+        "mape": 3.796587206111526
+      },
+      "XGBRegressor": {
+        "mae": 2562.4757414550777,
+        "rmse": 4129.402866889235,
+        "mape": 3.9354497684596175
+      }
+    },
+    "test_metrics": {
+      "mae": 2332.888749317923,
+      "rmse": 3612.837962469595,
+      "mape": 3.723125873660556
+    },
+    "beats_baseline_on_test_mae": false,
+    "n_train": 160,
+    "n_val": 40,
+    "n_test": 40
+  },
+  "expense": {
+    "selected_model": "RandomForestRegressor",
+    "baseline": {
+      "method": "2-month historical moving average (rolling_expense)",
+      "val": {
+        "mae": 7365.430124999999,
+        "rmse": 8693.691989924611,
+        "mape": 18.110706793472016
+      },
+      "test": {
+        "mae": 8052.947499999999,
+        "rmse": 9067.695591360367,
+        "mape": 20.191268595078064
+      }
+    },
+    "candidates": {
+      "RandomForestRegressor": {
+        "mae": 6373.861029022957,
+        "rmse": 8396.211884321841,
+        "mape": 15.182680212090805
+      },
+      "GradientBoostingRegressor": {
+        "mae": 6888.058796099169,
+        "rmse": 9079.616943473658,
+        "mape": 16.345221106788333
+      },
+      "XGBRegressor": {
+        "mae": 7237.9043378906235,
+        "rmse": 9268.618501872532,
+        "mape": 17.01956001518766
+      }
+    },
+    "test_metrics": {
+      "mae": 7396.768336726607,
+      "rmse": 8894.93447889366,
+      "mape": 20.365120706298494
+    },
+    "beats_baseline_on_test_mae": true,
+    "n_train": 160,
+    "n_val": 40,
+    "n_test": 40
+  }
+}

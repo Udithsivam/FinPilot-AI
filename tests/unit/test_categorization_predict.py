@@ -26,6 +26,8 @@ def test_categorize_transaction_returns_valid_taxonomy_label():
     assert result["subcategory"] in TAXONOMY[result["category"]]
     assert 0.0 <= result["confidence"] <= 1.0
     assert result["model_version"]
+    assert isinstance(result["needs_review"], bool)
+    assert result["needs_review"] == (result["confidence"] < 0.5)
 
 
 def test_categorize_transaction_handles_missing_merchant():

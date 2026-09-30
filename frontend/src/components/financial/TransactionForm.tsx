@@ -38,6 +38,7 @@ export function TransactionForm({ onSubmit, onCancel, isSubmitting }: Transactio
     category: string;
     subcategory: string;
     confidence: number;
+    needsReview: boolean;
   } | null>(null);
 
   const {
@@ -70,6 +71,7 @@ export function TransactionForm({ onSubmit, onCancel, isSubmitting }: Transactio
         category: result.category,
         subcategory: result.subcategory,
         confidence: result.confidence,
+        needsReview: result.needs_review,
       });
     },
   });
@@ -154,7 +156,10 @@ export function TransactionForm({ onSubmit, onCancel, isSubmitting }: Transactio
           <div className="flex items-center justify-between">
             <Label htmlFor="category">Category</Label>
             {suggestion && (
-              <Badge variant="outline">{Math.round(suggestion.confidence * 100)}% confidence</Badge>
+              <Badge variant={suggestion.needsReview ? "warning" : "outline"}>
+                {suggestion.needsReview ? "Needs review — " : ""}
+                {Math.round(suggestion.confidence * 100)}% confidence
+              </Badge>
             )}
           </div>
           <Input id="category" placeholder="Groceries" {...register("category")} />

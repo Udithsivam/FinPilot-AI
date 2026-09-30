@@ -1,3 +1,5 @@
+import os
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -24,3 +26,20 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Gates model-administration and MLOps endpoints (registry
+    promotion/rollback, cross-user monitoring/drift, the MLOps dashboard).
+
+    There is no is_admin column on User — adding one would require an
+    Alembic-style migration for the existing dev SQLite database, which
+    this project deliberately doesn't have (see README). Instead, admin
+    status is a small, explicit allowlist via the ADMIN_EMAILS environment
+    variable (comma-separated), checked against the already-authenticated
+    user — additive, migration-free, and still enforced server-side (not
+    a frontend-only gate)."""
+    admin_emails = {e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()}
+    if current_user.email.lower() not in admin_emails:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    return current_user

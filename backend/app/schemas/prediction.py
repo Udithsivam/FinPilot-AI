@@ -59,4 +59,31 @@ class CategorizeResponse(BaseModel):
     category: str
     subcategory: str
     confidence: float
+    needs_review: bool
     model_version: str
+
+
+class ExpenseForecastResponse(BaseModel):
+    prediction_id: int
+    forecast_period: str
+    predicted_expense: float
+    baseline_comparison: float
+    model_name: str
+    model_version: str
+    created_at: dt.datetime
+
+
+class ActualValueUpdate(BaseModel):
+    actual_value: str
+
+
+class CashFlowForecastResponse(BaseModel):
+    prediction_id: int
+    forecast_period: str
+    predicted_income: float
+    predicted_expense: float
+    predicted_net_cash_flow: float
+    baseline_comparison: float
+    model_name: str
+    model_version: str
+    created_at: dt.datetime

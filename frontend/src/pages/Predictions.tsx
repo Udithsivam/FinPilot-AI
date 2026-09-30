@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { History, TrendingUp } from "lucide-react";
+import { CalendarClock, History, TrendingUp } from "lucide-react";
 import { useState } from "react";
 
 import { PredictionCard } from "@/components/ai/PredictionCard";
@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, ApiError } from "@/lib/api";
+import { formatCurrency } from "@/lib/utils";
 import type { SavingsPredictionRequest } from "@/types/api";
 
 export function Predictions() {
@@ -25,6 +26,19 @@ export function Predictions() {
   });
 
   const history = useQuery({ queryKey: ["prediction-history"], queryFn: api.predictionHistory });
+  const forecast = useQuery({
+    queryKey: ["expense-forecast"],
+    queryFn: api.expenseForecast,
+    retry: false,
+  });
+  const forecastInsufficientHistory = forecast.error instanceof ApiError && forecast.error.status === 422;
+
+  const cashFlow = useQuery({
+    queryKey: ["cash-flow-forecast"],
+    queryFn: api.cashFlowForecast,
+    retry: false,
+  });
+  const cashFlowInsufficientHistory = cashFlow.error instanceof ApiError && cashFlow.error.status === 422;
 
   function handleSubmit(values: SavingsPredictionRequest) {
     setLastRequest(values);
@@ -90,6 +104,73 @@ export function Predictions() {
           )}
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-foreground">Expense forecast</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {forecast.isLoading ? (
+            <Skeleton className="h-24" />
+          ) : forecastInsufficientHistory ? (
+            <EmptyState
+              icon={CalendarClock}
+              title="Not enough history yet"
+              description="At least two months of expense transactions are needed to forecast next month's spending."
+            />
+          ) : forecast.isError ? (
+            <ErrorState onRetry={() => forecast.refetch()} />
+          ) : forecast.data ? (
+            <div className="space-y-2">
+              <PredictionCard
+                label={`Predicted expense — ${forecast.data.forecast_period}`}
+                value={forecast.data.predicted_expense}
+                description={`Model: ${forecast.data.model_name} (v${forecast.data.model_version})`}
+              />
+              <p className="text-xs text-muted-foreground">
+                Historical moving-average baseline for comparison: {formatCurrency(forecast.data.baseline_comparison)}
+              </p>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-foreground">Cash-flow forecast</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {cashFlow.isLoading ? (
+            <Skeleton className="h-24" />
+          ) : cashFlowInsufficientHistory ? (
+            <EmptyState
+              icon={CalendarClock}
+              title="Not enough history yet"
+              description="At least two months of income and expense transactions are needed to forecast next month's cash flow."
+            />
+          ) : cashFlow.isError ? (
+            <ErrorState onRetry={() => cashFlow.refetch()} />
+          ) : cashFlow.data ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <PredictionCard
+                label="Predicted income"
+                value={cashFlow.data.predicted_income}
+                description={cashFlow.data.forecast_period}
+              />
+              <PredictionCard
+                label="Predicted expense"
+                value={cashFlow.data.predicted_expense}
+                description={cashFlow.data.forecast_period}
+              />
+              <PredictionCard
+                label="Predicted net cash flow"
+                value={cashFlow.data.predicted_net_cash_flow}
+                description={`Model: ${cashFlow.data.model_name} (v${cashFlow.data.model_version})`}
+              />
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -34,6 +34,16 @@ export interface Transaction {
 
 export type TransactionInput = Omit<Transaction, "id">;
 
+export interface SemanticSearchResult {
+  transaction_id: number;
+  merchant: string | null;
+  description: string | null;
+  category: string;
+  amount: number;
+  date: string;
+  similarity: number;
+}
+
 export type BudgetStatusLevel = "normal" | "approaching_limit" | "exceeded";
 
 export interface Budget {
@@ -174,7 +184,95 @@ export interface CategorizeResponse {
   category: string;
   subcategory: string;
   confidence: number;
+  needs_review: boolean;
   model_version: string;
+}
+
+export interface AnomalyTransaction {
+  transaction_id: number;
+  merchant: string | null;
+  amount: number;
+  category: string;
+  date: string;
+  method: "statistical_zscore" | "isolation_forest" | "statistical_zscore+isolation_forest";
+  anomaly_score: number;
+  severity: "low" | "medium" | "high";
+  reason: string;
+  expected_range: string | null;
+}
+
+export interface CashFlowForecastResponse {
+  prediction_id: number;
+  forecast_period: string;
+  predicted_income: number;
+  predicted_expense: number;
+  predicted_net_cash_flow: number;
+  baseline_comparison: number;
+  model_name: string;
+  model_version: string;
+  created_at: string;
+}
+
+export interface ExpenseForecastResponse {
+  prediction_id: number;
+  forecast_period: string;
+  predicted_expense: number;
+  baseline_comparison: number;
+  model_name: string;
+  model_version: string;
+  created_at: string;
+}
+
+export interface ModelVersionInfo {
+  name: string;
+  version: string;
+  run_id: string;
+  lifecycle_stage: "candidate" | "validated" | "production" | "archived";
+  created_at: number;
+}
+
+export interface PerformanceMetric {
+  prediction_type: string;
+  model_name: string | null;
+  model_version: string | null;
+  sample_count: number;
+  status: "healthy" | "insufficient_data";
+  mae: number | null;
+  rmse: number | null;
+  r2: number | null;
+}
+
+export interface DriftMetric {
+  feature: string;
+  metric: string;
+  value: number | null;
+  threshold: number | null;
+  status: "stable" | "warning" | "drift_detected" | "insufficient_data";
+  reference_size: number;
+  current_size: number;
+}
+
+export interface MLOpsSummary {
+  registry: Record<string, ModelVersionInfo[]>;
+  performance: PerformanceMetric[];
+  drift: DriftMetric[];
+  feedback: { total_feedback: number; category_corrections: number; note: string };
+  rag: { document_count: number; chunk_count: number; embedding_method: string };
+}
+
+export interface ChatSource {
+  index: number;
+  title: string;
+  source: string;
+  document_id: string;
+}
+
+export interface ChatResponse {
+  answer: string;
+  sources: ChatSource[];
+  user_facts: string[];
+  predictions: string[];
+  provider: string;
 }
 
 export interface FeedbackInput {

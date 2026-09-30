@@ -1,0 +1,12 @@
+{
+  "feedback_rows_used": 1,
+  "synthetic_rows_used": 6585,
+  "n_train": 5268,
+  "n_test": 1318,
+  "accuracy": 0.8512898330804249,
+  "macro_precision": 0.939281285430839,
+  "macro_recall": 0.8382893709838692,
+  "macro_f1": 0.8781325516345712,
+  "candidate_version": 10,
+  "run_id": "81015195bb784490883499245219e47e"
+}

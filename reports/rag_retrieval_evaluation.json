@@ -1,0 +1,138 @@
+{
+  "top_k": 4,
+  "n_questions": 12,
+  "hits": 11,
+  "hit_at_k": 0.9167,
+  "results": [
+    {
+      "question": "What is an emergency fund?",
+      "expected_document_id": "emergency_fund",
+      "retrieved_document_ids": [
+        "financial_goal_planning",
+        "emergency_fund",
+        "financial_literacy_overview",
+        "financial_goal_planning"
+      ],
+      "hit": true
+    },
+    {
+      "question": "How does budgeting work?",
+      "expected_document_id": "budgeting",
+      "retrieved_document_ids": [
+        "budgeting",
+        "financial_literacy_overview"
+      ],
+      "hit": true
+    },
+    {
+      "question": "What is cash flow?",
+      "expected_document_id": "cash_flow",
+      "retrieved_document_ids": [
+        "cash_flow",
+        "cash_flow",
+        "personal_finance_terminology",
+        "cash_flow"
+      ],
+      "hit": true
+    },
+    {
+      "question": "What is credit utilization?",
+      "expected_document_id": "credit_utilization",
+      "retrieved_document_ids": [
+        "credit_utilization",
+        "credit_utilization",
+        "credit_utilization",
+        "credit_utilization"
+      ],
+      "hit": true
+    },
+    {
+      "question": "How should recurring expenses be reviewed?",
+      "expected_document_id": "subscription_management",
+      "retrieved_document_ids": [
+        "personal_finance_terminology",
+        "financial_literacy_overview",
+        "expense_management",
+        "expense_management"
+      ],
+      "hit": false
+    },
+    {
+      "question": "What is the difference between saving and investing?",
+      "expected_document_id": "investing_terminology",
+      "retrieved_document_ids": [
+        "investing_terminology",
+        "financial_literacy_overview",
+        "budgeting",
+        "savings_principles"
+      ],
+      "hit": true
+    },
+    {
+      "question": "What is the debt avalanche method?",
+      "expected_document_id": "debt_management",
+      "retrieved_document_ids": [
+        "debt_management",
+        "debt_management",
+        "debt_management",
+        "financial_goal_planning"
+      ],
+      "hit": true
+    },
+    {
+      "question": "What is net worth?",
+      "expected_document_id": "personal_finance_terminology",
+      "retrieved_document_ids": [
+        "cash_flow",
+        "personal_finance_terminology",
+        "financial_literacy_overview",
+        "savings_principles"
+      ],
+      "hit": true
+    },
+    {
+      "question": "What does a deductible mean for insurance?",
+      "expected_document_id": "insurance_basics",
+      "retrieved_document_ids": [
+        "insurance_basics",
+        "expense_management",
+        "insurance_basics"
+      ],
+      "hit": true
+    },
+    {
+      "question": "What is diversification in investing?",
+      "expected_document_id": "investing_terminology",
+      "retrieved_document_ids": [
+        "investing_terminology",
+        "investing_terminology",
+        "financial_literacy_overview",
+        "risk_concepts"
+      ],
+      "hit": true
+    },
+    {
+      "question": "How much should I save each month?",
+      "expected_document_id": "savings_principles",
+      "retrieved_document_ids": [
+        "financial_goal_planning",
+        "expense_management",
+        "budgeting",
+        "savings_principles"
+      ],
+      "hit": true
+    },
+    {
+      "question": "What is a SMART financial goal?",
+      "expected_document_id": "financial_goal_planning",
+      "retrieved_document_ids": [
+        "financial_goal_planning",
+        "financial_literacy_overview",
+        "financial_goal_planning",
+        "risk_concepts"
+      ],
+      "hit": true
+    }
+  ],
+  "limitation": "This measures retrieval only (does the expected document appear in the top-k results). There is no LLM provider configured in this environment, so no generated-answer faithfulness/groundedness score is computed \u2014 see src/rag/providers.py and the README for how to enable one."
+}

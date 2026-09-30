@@ -1,2 +1,5 @@
 /savings_prediction_pipeline.pkl
 /transaction_categorizer_pipeline.pkl
+/expense_forecast_pipeline.pkl
+/cashflow_forecast_pipeline.pkl
+/transaction_categorizer_candidate.pkl

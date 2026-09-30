@@ -1,10 +1,15 @@
 import type {
+  AnomalyTransaction,
   Budget,
   BudgetInput,
+  CashFlowForecastResponse,
   CategorizeRequest,
   CategorizeResponse,
+  ChatResponse,
   DashboardSummary,
+  ExpenseForecastResponse,
   FeedbackInput,
+  MLOpsSummary,
   Goal,
   GoalInput,
   HealthScoreResponse,
@@ -15,6 +20,7 @@ import type {
   Recommendation,
   SavingsPredictionRequest,
   SavingsPredictionResponse,
+  SemanticSearchResult,
   Token,
   Transaction,
   TransactionInput,
@@ -88,6 +94,8 @@ export const api = {
   deleteTransaction: (id: number) => request<void>(`/transactions/${id}`, { method: "DELETE" }),
   categorizeTransaction: (payload: CategorizeRequest) =>
     request<CategorizeResponse>("/transactions/categorize", { method: "POST", body: JSON.stringify(payload) }),
+  searchTransactions: (q: string) =>
+    request<SemanticSearchResult[]>(`/transactions/search?q=${encodeURIComponent(q)}`),
 
   listBudgets: () => request<Budget[]>("/budgets"),
   createBudget: (payload: BudgetInput) =>
@@ -105,6 +113,7 @@ export const api = {
   healthScore: () => request<HealthScoreResponse>("/analytics/health-score"),
   insights: () => request<Insight[]>("/analytics/insights"),
   recommendations: () => request<Recommendation[]>("/analytics/recommendations"),
+  anomalies: () => request<AnomalyTransaction[]>("/analytics/anomalies"),
 
   predictSavings: (payload: SavingsPredictionRequest) =>
     request<SavingsPredictionResponse>("/predict/savings", {
@@ -112,7 +121,14 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   predictionHistory: () => request<PredictionHistoryItem[]>("/predictions/history"),
+  expenseForecast: () => request<ExpenseForecastResponse>("/predictions/expenses"),
+  cashFlowForecast: () => request<CashFlowForecastResponse>("/predictions/cash-flow"),
 
   submitFeedback: (payload: FeedbackInput) =>
     request<void>("/feedback", { method: "POST", body: JSON.stringify(payload) }),
+
+  chat: (question: string) =>
+    request<ChatResponse>("/ai/chat", { method: "POST", body: JSON.stringify({ question }) }),
+
+  mlopsSummary: () => request<MLOpsSummary>("/mlops/summary"),
 };

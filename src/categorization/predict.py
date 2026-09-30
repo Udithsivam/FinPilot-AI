@@ -18,6 +18,13 @@ from src.categorization.taxonomy import split_joint_label
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PIPELINE_PATH = PROJECT_ROOT / "models" / "transaction_categorizer_pipeline.pkl"
 
+# Below this confidence, a suggestion should be surfaced as needing manual
+# review rather than silently auto-filled — a generic/ambiguous
+# description (see scripts/generate_transaction_data.py's synthetic
+# noise) genuinely doesn't carry enough signal to categorize confidently,
+# and pretending otherwise would be worse than admitting uncertainty.
+NEEDS_REVIEW_THRESHOLD = 0.5
+
 
 @lru_cache(maxsize=4)
 def _load_pipeline_cached(path: Path):
@@ -60,5 +67,6 @@ def categorize_transaction(merchant: str | None, description: str | None) -> dic
         "category": category,
         "subcategory": subcategory,
         "confidence": confidence,
+        "needs_review": confidence < NEEDS_REVIEW_THRESHOLD,
         "model_version": metadata["model_version"],
     }
