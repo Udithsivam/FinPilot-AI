@@ -46,6 +46,21 @@ def monthly_breakdown(db: Session, user_id: int) -> list[dict]:
     ]
 
 
+def expense_totals_by_month_and_category(db: Session, user_id: int) -> dict[str, dict[str, float]]:
+    """{"YYYY-MM": {category: total_amount}} for the user's expense
+    transactions — shared by insights_service and recommendation_service
+    so month-over-month category comparisons aren't computed twice."""
+    transactions = (
+        db.query(Transaction).filter(Transaction.user_id == user_id, Transaction.type == "expense").all()
+    )
+    by_month: dict[str, dict[str, float]] = {}
+    for t in transactions:
+        month_key = t.date.strftime("%Y-%m")
+        bucket = by_month.setdefault(month_key, {})
+        bucket[t.category] = bucket.get(t.category, 0.0) + t.amount
+    return by_month
+
+
 def category_breakdown(db: Session, user_id: int) -> list[dict]:
     transactions = (
         db.query(Transaction)

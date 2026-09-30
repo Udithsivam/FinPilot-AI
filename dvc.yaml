@@ -16,3 +16,16 @@ stages:
     metrics:
       - reports/training_metrics.json:
           cache: false
+
+  categorize_train:
+    cmd: python -m src.categorization.train
+    deps:
+      - data/raw/finpilot_transactions.csv
+      - src/categorization/features.py
+      - src/categorization/taxonomy.py
+      - src/categorization/train.py
+    outs:
+      - models/transaction_categorizer_pipeline.pkl
+    metrics:
+      - reports/categorization_metrics.json:
+          cache: false

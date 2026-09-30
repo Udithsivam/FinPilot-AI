@@ -29,6 +29,12 @@ class User(Base):
     goals: Mapped[list["FinancialGoal"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    predictions: Mapped[list["Prediction"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    feedback_entries: Mapped[list["Feedback"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class UserProfile(Base):

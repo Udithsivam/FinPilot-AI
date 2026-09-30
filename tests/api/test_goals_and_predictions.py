@@ -101,3 +101,33 @@ def test_predict_savings_returns_503_when_model_missing(client, auth_headers, mo
     monkeypatch.setattr("src.pipeline.predict.load_pipeline", _raise_missing)
     response = client.post("/predict/savings", json=VALID_PREDICTION_PAYLOAD, headers=auth_headers)
     assert response.status_code == 503
+
+
+def test_predict_savings_includes_real_explanation(client, auth_headers):
+    response = client.post("/predict/savings", json=VALID_PREDICTION_PAYLOAD, headers=auth_headers)
+    explanation = response.json()["explanation"]
+    assert len(explanation) > 0
+    for factor in explanation:
+        assert factor["feature"]
+        assert isinstance(factor["impact"], float)
+        assert factor["direction"] in ("positive", "negative")
+    # Income should dominate a GradientBoostingRegressor trained on this dataset.
+    assert explanation[0]["feature"] == "Income"
+
+
+def test_predict_savings_persists_to_history(client, auth_headers):
+    client.post("/predict/savings", json=VALID_PREDICTION_PAYLOAD, headers=auth_headers)
+    history = client.get("/predictions/history", headers=auth_headers).json()
+    assert any(p["prediction_type"] == "savings" for p in history)
+
+
+def test_prediction_history_requires_auth(client):
+    response = client.get("/predictions/history")
+    assert response.status_code == 401
+
+
+def test_user_cannot_see_another_users_prediction_history(client, auth_headers):
+    client.post("/predict/savings", json=VALID_PREDICTION_PAYLOAD, headers=auth_headers)
+    user_b_headers = _other_user_headers(client)
+    history = client.get("/predictions/history", headers=user_b_headers).json()
+    assert history == []

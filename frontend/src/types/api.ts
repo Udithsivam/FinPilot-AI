@@ -95,6 +95,17 @@ export interface Insight {
   tone: "success" | "warning";
 }
 
+export interface Recommendation {
+  id: number;
+  type: string;
+  title: string;
+  evidence: string;
+  reason: string;
+  action: string;
+  priority: "high" | "medium" | "low";
+  created_at: string;
+}
+
 export type HealthRating = "Good" | "Moderate" | "Low" | "High" | "Not Enough Data";
 
 export interface HealthScoreFactor {
@@ -129,8 +140,45 @@ export interface SavingsPredictionRequest {
   Miscellaneous: number;
 }
 
+export interface FeatureImpact {
+  feature: string;
+  impact: number;
+  direction: "positive" | "negative";
+}
+
 export interface SavingsPredictionResponse {
   predicted_desired_savings: number;
   model_type: string;
   model_version: string;
+  explanation: FeatureImpact[];
+}
+
+export interface PredictionHistoryItem {
+  id: number;
+  prediction_type: string;
+  prediction_value: string;
+  model_name: string;
+  model_version: string;
+  created_at: string;
+  actual_value: string | null;
+  status: string;
+}
+
+export interface CategorizeRequest {
+  merchant?: string | null;
+  description?: string | null;
+}
+
+export interface CategorizeResponse {
+  prediction_id: number;
+  category: string;
+  subcategory: string;
+  confidence: number;
+  model_version: string;
+}
+
+export interface FeedbackInput {
+  prediction_id?: number | null;
+  feedback_type: "category_correction" | "prediction_correction" | "recommendation_feedback";
+  corrected_value?: string | null;
 }

@@ -1,0 +1,5 @@
+outs:
+- md5: ea40055727785dc134ac6f5a9b27d862
+  size: 2958
+  hash: md5
+  path: finpilot_users.csv

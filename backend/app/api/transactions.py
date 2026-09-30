@@ -5,9 +5,46 @@ from backend.app.api.deps import get_current_user
 from backend.app.database.session import get_db
 from backend.app.models.transaction import Transaction
 from backend.app.models.user import User
+from backend.app.schemas.prediction import CategorizeRequest, CategorizeResponse
 from backend.app.schemas.transaction import TransactionCreate, TransactionOut
+from backend.app.services.prediction_service import record_prediction
+from src.categorization.predict import categorize_transaction
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
+
+
+@router.post("/categorize", response_model=CategorizeResponse)
+def categorize_transaction_endpoint(
+    payload: CategorizeRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Suggest a category/subcategory from merchant + description text.
+
+    Purely a suggestion: the caller (the transaction-creation form) is
+    free to use, edit, or ignore it before actually creating the
+    transaction. If the user's final choice differs from this
+    suggestion, the frontend records that as feedback via POST /feedback
+    referencing the returned prediction_id.
+    """
+    try:
+        result = categorize_transaction(payload.merchant, payload.description)
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Categorization model is not available; run its training pipeline first.",
+        ) from exc
+
+    prediction = record_prediction(
+        db,
+        user_id=current_user.id,
+        prediction_type="categorization",
+        prediction_value=f"{result['category']} > {result['subcategory']}",
+        model_name="TransactionCategorizer",
+        model_version=result["model_version"],
+    )
+
+    return CategorizeResponse(prediction_id=prediction.id, **result)
 
 
 @router.post("", response_model=TransactionOut, status_code=status.HTTP_201_CREATED)

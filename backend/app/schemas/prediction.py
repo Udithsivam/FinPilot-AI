@@ -1,6 +1,7 @@
+import datetime as dt
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class SavingsPredictionRequest(BaseModel):
@@ -22,7 +23,40 @@ class SavingsPredictionRequest(BaseModel):
     Miscellaneous: float
 
 
+class FeatureImpact(BaseModel):
+    feature: str
+    impact: float
+    direction: Literal["positive", "negative"]
+
+
 class SavingsPredictionResponse(BaseModel):
     predicted_desired_savings: float
     model_type: str
+    model_version: str
+    explanation: list[FeatureImpact]
+
+
+class PredictionHistoryItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    prediction_type: str
+    prediction_value: str
+    model_name: str
+    model_version: str
+    created_at: dt.datetime
+    actual_value: str | None
+    status: str
+
+
+class CategorizeRequest(BaseModel):
+    merchant: str | None = None
+    description: str | None = None
+
+
+class CategorizeResponse(BaseModel):
+    prediction_id: int
+    category: str
+    subcategory: str
+    confidence: float
     model_version: str

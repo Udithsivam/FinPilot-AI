@@ -1,12 +1,17 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { Sparkles } from "lucide-react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { api } from "@/lib/api";
 import type { TransactionInput } from "@/types/api";
 
 const schema = z.object({
@@ -28,10 +33,19 @@ interface TransactionFormProps {
 }
 
 export function TransactionForm({ onSubmit, onCancel, isSubmitting }: TransactionFormProps) {
+  const [suggestion, setSuggestion] = useState<{
+    predictionId: number;
+    category: string;
+    subcategory: string;
+    confidence: number;
+  } | null>(null);
+
   const {
     register,
     handleSubmit,
     control,
+    getValues,
+    setValue,
     formState: { errors },
   } = useForm<z.input<typeof schema>, unknown, z.output<typeof schema>>({
     resolver: zodResolver(schema),
@@ -39,6 +53,24 @@ export function TransactionForm({ onSubmit, onCancel, isSubmitting }: Transactio
       date: new Date().toISOString().slice(0, 10),
       type: "expense",
       is_recurring: false,
+    },
+  });
+
+  const categorize = useMutation({
+    mutationFn: () =>
+      api.categorizeTransaction({
+        merchant: getValues("merchant") || null,
+        description: getValues("description") || null,
+      }),
+    onSuccess: (result) => {
+      setValue("category", result.category, { shouldValidate: true });
+      setValue("subcategory", result.subcategory);
+      setSuggestion({
+        predictionId: result.prediction_id,
+        category: result.category,
+        subcategory: result.subcategory,
+        confidence: result.confidence,
+      });
     },
   });
 
@@ -50,6 +82,24 @@ export function TransactionForm({ onSubmit, onCancel, isSubmitting }: Transactio
       payment_method: values.payment_method || null,
       description: values.description || null,
     });
+
+    // If the user changed the suggested category/subcategory before
+    // submitting, that override is real signal about a wrong prediction —
+    // record it as feedback rather than silently discarding it.
+    if (
+      suggestion &&
+      (values.category !== suggestion.category || (values.subcategory || "") !== suggestion.subcategory)
+    ) {
+      api
+        .submitFeedback({
+          prediction_id: suggestion.predictionId,
+          feedback_type: "category_correction",
+          corrected_value: values.subcategory ? `${values.category} > ${values.subcategory}` : values.category,
+        })
+        .catch(() => {
+          /* best-effort — a failed feedback write shouldn't block the transaction that already saved */
+        });
+    }
   });
 
   return (
@@ -69,32 +119,6 @@ export function TransactionForm({ onSubmit, onCancel, isSubmitting }: Transactio
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label>Type</Label>
-          <Controller
-            control={control}
-            name="type"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="expense">Expense</SelectItem>
-                  <SelectItem value="income">Income</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="category">Category</Label>
-          <Input id="category" placeholder="Groceries" {...register("category")} />
-          {errors.category && <p className="text-xs text-danger">{errors.category.message}</p>}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
           <Label htmlFor="merchant">Merchant</Label>
           <Input id="merchant" placeholder="Optional" {...register("merchant")} />
         </div>
@@ -107,6 +131,58 @@ export function TransactionForm({ onSubmit, onCancel, isSubmitting }: Transactio
       <div className="space-y-1.5">
         <Label htmlFor="description">Description</Label>
         <Input id="description" placeholder="Optional note" {...register("description")} />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          Have a merchant or description? Get a suggested category from the trained model.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          isLoading={categorize.isPending}
+          onClick={() => categorize.mutate()}
+        >
+          <Sparkles />
+          Suggest category
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="category">Category</Label>
+            {suggestion && (
+              <Badge variant="outline">{Math.round(suggestion.confidence * 100)}% confidence</Badge>
+            )}
+          </div>
+          <Input id="category" placeholder="Groceries" {...register("category")} />
+          {errors.category && <p className="text-xs text-danger">{errors.category.message}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="subcategory">Subcategory</Label>
+          <Input id="subcategory" placeholder="Optional" {...register("subcategory")} />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>Type</Label>
+        <Controller
+          control={control}
+          name="type"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="expense">Expense</SelectItem>
+                <SelectItem value="income">Income</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
       </div>
 
       <label className="flex items-center gap-2 text-sm text-muted-foreground">

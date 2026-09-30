@@ -10,27 +10,14 @@ honest result.
 
 from sqlalchemy.orm import Session
 
-from backend.app.models.transaction import Transaction
 from backend.app.services import analytics_service
 
 CATEGORY_CHANGE_THRESHOLD_PCT = 15.0
 SAVINGS_STREAK_RATE_PCT = 20.0
 
 
-def _expense_totals_by_month_and_category(db: Session, user_id: int) -> dict[str, dict[str, float]]:
-    transactions = (
-        db.query(Transaction).filter(Transaction.user_id == user_id, Transaction.type == "expense").all()
-    )
-    by_month: dict[str, dict[str, float]] = {}
-    for t in transactions:
-        month_key = t.date.strftime("%Y-%m")
-        bucket = by_month.setdefault(month_key, {})
-        bucket[t.category] = bucket.get(t.category, 0.0) + t.amount
-    return by_month
-
-
 def _category_change_insights(db: Session, user_id: int) -> list[dict]:
-    by_month = _expense_totals_by_month_and_category(db, user_id)
+    by_month = analytics_service.expense_totals_by_month_and_category(db, user_id)
     months = sorted(by_month.keys())
     if len(months) < 2:
         return []

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Info, Sparkles } from "lucide-react";
+import { Info, Lightbulb, Sparkles } from "lucide-react";
 
 import { AIInsightCard } from "@/components/ai/AIInsightCard";
 import { AnomalyAlert } from "@/components/ai/AnomalyAlert";
@@ -11,10 +11,11 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { SAMPLE_ANOMALY, SAMPLE_RECOMMENDATION } from "@/mocks/ai";
+import { SAMPLE_ANOMALY } from "@/mocks/ai";
 
 export function AIInsights() {
   const insights = useQuery({ queryKey: ["insights"], queryFn: api.insights });
+  const recommendations = useQuery({ queryKey: ["recommendations"], queryFn: api.recommendations });
 
   return (
     <PageContainer className="space-y-6">
@@ -28,10 +29,9 @@ export function AIInsights() {
       <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/50 p-4 text-sm">
         <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
         <p className="text-muted-foreground">
-          "Recent insights" below are computed directly from your own transactions (month-over-month
-          category changes, savings-rate streaks) — rule-based, not an AI/ML model. Recommendation,
-          anomaly detection and explanation are previews of features not built yet, and are clearly
-          marked "Sample".
+          "Recent insights" and "Recommendation" below are computed directly from your own transactions
+          and budgets — rule-based, not an AI/ML model. Anomaly detection and the generic financial tip
+          are previews of features not built yet, and are clearly marked "Sample".
         </p>
       </div>
 
@@ -72,8 +72,32 @@ export function AIInsights() {
         </section>
 
         <section className="space-y-3">
-          <h3 className="text-base font-semibold">Recommendation</h3>
-          <RecommendationCard {...SAMPLE_RECOMMENDATION} />
+          <h3 className="text-base font-semibold">Recommendations</h3>
+          {recommendations.isLoading ? (
+            <Skeleton className="h-32" />
+          ) : recommendations.isError ? (
+            <ErrorState onRetry={() => recommendations.refetch()} />
+          ) : recommendations.data && recommendations.data.length > 0 ? (
+            <div className="space-y-3">
+              {recommendations.data.map((rec) => (
+                <RecommendationCard
+                  key={rec.id}
+                  title={rec.title}
+                  detected={rec.evidence}
+                  why={rec.reason}
+                  action={rec.action}
+                  impact={`Priority: ${rec.priority}`}
+                  sample={false}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={Lightbulb}
+              title="No recommendations right now"
+              description="Recommendations appear once there's enough budget, spending or income history to evaluate."
+            />
+          )}
         </section>
 
         <section className="space-y-3">

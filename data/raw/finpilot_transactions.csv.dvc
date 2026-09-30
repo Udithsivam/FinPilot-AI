@@ -1,0 +1,5 @@
+outs:
+- md5: 1f45354c921b268b196185e663d4b1d8
+  size: 714993
+  hash: md5
+  path: finpilot_transactions.csv

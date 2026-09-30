@@ -86,3 +86,31 @@ stages:
       hash: md5
       md5: 7ef6358e1b737ef108ad624b0957a737
       size: 540
+  categorize_train:
+    cmd: python -m src.categorization.train
+    deps:
+    - path: data/raw/finpilot_transactions.csv
+      hash: md5
+      md5: 1f45354c921b268b196185e663d4b1d8
+      size: 714993
+    - path: src/categorization/features.py
+      hash: md5
+      md5: 1e164c1091ce5270fe9d3d084cd3f840
+      size: 922
+    - path: src/categorization/taxonomy.py
+      hash: md5
+      md5: 7a2ba3a962c23e71f4c21ac85978b7f3
+      size: 4541
+    - path: src/categorization/train.py
+      hash: md5
+      md5: 7e78a1a8e622c04c81a65470542ac26f
+      size: 5733
+    outs:
+    - path: models/transaction_categorizer_pipeline.pkl
+      hash: md5
+      md5: da74637e17916d6dd0b387f5067334d3
+      size: 341308
+    - path: reports/categorization_metrics.json
+      hash: md5
+      md5: 0245de58fe589a852faa9f52943e5ef3
+      size: 6571

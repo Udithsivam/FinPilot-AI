@@ -1,13 +1,18 @@
 import type {
   Budget,
   BudgetInput,
+  CategorizeRequest,
+  CategorizeResponse,
   DashboardSummary,
+  FeedbackInput,
   Goal,
   GoalInput,
   HealthScoreResponse,
   Insight,
   MonthlyBreakdown,
+  PredictionHistoryItem,
   ProfileUpdate,
+  Recommendation,
   SavingsPredictionRequest,
   SavingsPredictionResponse,
   Token,
@@ -81,6 +86,8 @@ export const api = {
   createTransaction: (payload: TransactionInput) =>
     request<Transaction>("/transactions", { method: "POST", body: JSON.stringify(payload) }),
   deleteTransaction: (id: number) => request<void>(`/transactions/${id}`, { method: "DELETE" }),
+  categorizeTransaction: (payload: CategorizeRequest) =>
+    request<CategorizeResponse>("/transactions/categorize", { method: "POST", body: JSON.stringify(payload) }),
 
   listBudgets: () => request<Budget[]>("/budgets"),
   createBudget: (payload: BudgetInput) =>
@@ -97,10 +104,15 @@ export const api = {
   categories: () => request<CategoryAmount[]>("/analytics/categories"),
   healthScore: () => request<HealthScoreResponse>("/analytics/health-score"),
   insights: () => request<Insight[]>("/analytics/insights"),
+  recommendations: () => request<Recommendation[]>("/analytics/recommendations"),
 
   predictSavings: (payload: SavingsPredictionRequest) =>
     request<SavingsPredictionResponse>("/predict/savings", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  predictionHistory: () => request<PredictionHistoryItem[]>("/predictions/history"),
+
+  submitFeedback: (payload: FeedbackInput) =>
+    request<void>("/feedback", { method: "POST", body: JSON.stringify(payload) }),
 };
