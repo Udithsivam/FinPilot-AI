@@ -9,6 +9,7 @@ import { Landing } from "@/pages/Landing";
 import { Login } from "@/pages/Login";
 import { Onboarding } from "@/pages/Onboarding";
 import { Register } from "@/pages/Register";
+import { Transactions } from "@/pages/Transactions";
 
 function App() {
   return (
@@ -33,16 +34,7 @@ function App() {
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route
-          path="/transactions"
-          element={
-            <ComingSoon
-              icon={Wallet}
-              title="Transactions"
-              description="Full transaction history, import and receipt scanning are coming next."
-            />
-          }
-        />
+        <Route path="/transactions" element={<Transactions />} />
         <Route
           path="/budgets"
           element={
