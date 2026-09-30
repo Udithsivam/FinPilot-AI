@@ -21,11 +21,16 @@ analytics, and a savings-prediction endpoint backed by the Phase 2/3
 pipeline. Defaults to SQLite locally; point `DATABASE_URL` at Postgres
 for production.
 
-**Phase 5 — Intelligence (in progress):** started with the Financial
+**Phase 5 — Intelligence (paused):** started with the Financial
 Health Score (`GET /analytics/health-score`) — a rule-based, explainable
 score built from the user's own transactions/budgets/goals. Remaining
 Phase 5 work (categorization, forecasting, anomaly detection,
-recommendations, explainability) is not built yet.
+recommendations, explainability) is paused in favor of frontend work.
+
+**Phase 6 — Frontend (foundation done):** a React + TypeScript + Vite
+app (`frontend/`) with the full design system, app shell (sidebar/header/
+mobile nav), reusable UI/financial/AI component libraries, and a fully
+wired, real-data Dashboard page. See `frontend/README.md`.
 
 ## Project layout
 

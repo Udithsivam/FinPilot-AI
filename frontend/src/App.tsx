@@ -1,0 +1,97 @@
+import { BarChart3, Settings, Sparkles, Target, TrendingUp, Wallet } from "lucide-react";
+import { Navigate, Route, Routes } from "react-router-dom";
+
+import { AppShell } from "@/components/layout/AppShell";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ComingSoon } from "@/pages/ComingSoon";
+import { Dashboard } from "@/pages/Dashboard";
+import { Landing } from "@/pages/Landing";
+import { Login } from "@/pages/Login";
+import { Onboarding } from "@/pages/Onboarding";
+import { Register } from "@/pages/Register";
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route
+        path="/onboarding"
+        element={
+          <ProtectedRoute>
+            <Onboarding />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppShell />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route
+          path="/transactions"
+          element={
+            <ComingSoon
+              icon={Wallet}
+              title="Transactions"
+              description="Full transaction history, import and receipt scanning are coming next."
+            />
+          }
+        />
+        <Route
+          path="/budgets"
+          element={
+            <ComingSoon icon={Wallet} title="Budgets" description="Manage all your category budgets here." />
+          }
+        />
+        <Route
+          path="/goals"
+          element={<ComingSoon icon={Target} title="Goals" description="Manage all your financial goals here." />}
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ComingSoon
+              icon={BarChart3}
+              title="Analytics"
+              description="Deeper monthly and category analytics are coming next."
+            />
+          }
+        />
+        <Route
+          path="/insights"
+          element={
+            <ComingSoon
+              icon={Sparkles}
+              title="AI Insights"
+              description="Transaction categorization, anomaly detection and recommendations land in a future phase."
+            />
+          }
+        />
+        <Route
+          path="/predictions"
+          element={
+            <ComingSoon
+              icon={TrendingUp}
+              title="Predictions"
+              description="A dedicated savings-prediction workspace is coming next."
+            />
+          }
+        />
+        <Route
+          path="/settings"
+          element={<ComingSoon icon={Settings} title="Settings" description="Profile and preferences." />}
+        />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+export default App;

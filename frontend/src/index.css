@@ -1,0 +1,229 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Class-based dark mode: toggling `.dark` on <html> switches every
+   `dark:` variant, instead of following the OS media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------
+   FinPilot AI design tokens — exact palette from the design spec.
+   Semantic names (background/foreground/brand/success/...) rather than
+   raw palette names, so component code never hardcodes a color and both
+   themes stay in sync automatically.
+   ------------------------------------------------------------------ */
+:root {
+  --background: #f7f8fa;
+  --foreground: #111827;
+
+  --card: #ffffff;
+  --card-foreground: #111827;
+
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+
+  --muted: #eef0f2;
+  --muted-foreground: #4b5563;
+  --subtle-foreground: #9ca3af;
+
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+
+  --brand: #10b981;
+  --brand-hover: #059669;
+  --brand-foreground: #ffffff;
+  --brand-subtle: #ecfdf5;
+  --brand-subtle-foreground: #047857;
+
+  /* AI accent — deliberately distinct from the brand green, so any
+     AI-generated surface (insights, predictions, recommendations) reads
+     as visually different from the core, data-driven app. */
+  --ai: #7c3aed;
+  --ai-foreground: #ffffff;
+  --ai-subtle: #f5f3ff;
+  --ai-subtle-foreground: #6d28d9;
+
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --success-subtle: #ecfdf5;
+  --success-subtle-foreground: #047857;
+
+  --warning: #f59e0b;
+  --warning-foreground: #1f2937;
+  --warning-subtle: #fffbeb;
+  --warning-subtle-foreground: #b45309;
+
+  --danger: #ef4444;
+  --danger-foreground: #ffffff;
+  --danger-subtle: #fef2f2;
+  --danger-subtle-foreground: #b91c1c;
+
+  --info: #3b82f6;
+  --info-foreground: #ffffff;
+  --info-subtle: #eff6ff;
+  --info-subtle-foreground: #1d4ed8;
+
+  --radius: 0.75rem;
+  --shadow-color: 220 20% 10%;
+}
+
+.dark {
+  --background: #0b0f14;
+  --foreground: #f9fafb;
+
+  --card: #151b23;
+  --card-foreground: #f9fafb;
+
+  --popover: #151b23;
+  --popover-foreground: #f9fafb;
+
+  --muted: #1a2129;
+  --muted-foreground: #cbd5e1;
+  --subtle-foreground: #64748b;
+
+  --border: #1f2937;
+  --input: #1f2937;
+
+  --brand: #34d399;
+  --brand-hover: #10b981;
+  --brand-foreground: #0b0f14;
+  --brand-subtle: #022c22;
+  --brand-subtle-foreground: #6ee7b7;
+
+  --ai: #a78bfa;
+  --ai-foreground: #0b0f14;
+  --ai-subtle: #2e1065;
+  --ai-subtle-foreground: #c4b5fd;
+
+  --success: #10b981;
+  --success-foreground: #0b0f14;
+  --success-subtle: #022c22;
+  --success-subtle-foreground: #6ee7b7;
+
+  --warning: #f59e0b;
+  --warning-foreground: #0b0f14;
+  --warning-subtle: #451a03;
+  --warning-subtle-foreground: #fcd34d;
+
+  --danger: #ef4444;
+  --danger-foreground: #0b0f14;
+  --danger-subtle: #450a0a;
+  --danger-subtle-foreground: #fca5a5;
+
+  --info: #3b82f6;
+  --info-foreground: #0b0f14;
+  --info-subtle: #172554;
+  --info-subtle-foreground: #93c5fd;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--brand);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-subtle: var(--brand-subtle);
+  --color-brand-subtle-foreground: var(--brand-subtle-foreground);
+
+  --color-ai: var(--ai);
+  --color-ai-foreground: var(--ai-foreground);
+  --color-ai-subtle: var(--ai-subtle);
+  --color-ai-subtle-foreground: var(--ai-subtle-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-subtle-foreground: var(--success-subtle-foreground);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-subtle-foreground: var(--warning-subtle-foreground);
+
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-subtle-foreground: var(--danger-subtle-foreground);
+
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-subtle-foreground: var(--info-subtle-foreground);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --breakpoint-xs: 30rem;
+
+  /* Typography scale from the design spec: size / line-height, weight
+     applied separately via font-bold/font-semibold/font-normal/font-medium. */
+  --text-display: 3rem;
+  --text-display--line-height: 3.5rem;
+  --text-page-heading: 1.875rem;
+  --text-page-heading--line-height: 2.375rem;
+  --text-section-heading: 1.25rem;
+  --text-section-heading--line-height: 1.75rem;
+  --text-card-heading: 1rem;
+  --text-card-heading--line-height: 1.5rem;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.375rem;
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.25rem;
+  --text-tiny: 0.75rem;
+  --text-tiny--line-height: 1.125rem;
+
+  /* Subtle, layered elevation instead of harsh default box-shadows. */
+  --shadow-xs: 0 1px 2px hsl(var(--shadow-color) / 0.04);
+  --shadow-sm: 0 1px 3px hsl(var(--shadow-color) / 0.06), 0 1px 2px hsl(var(--shadow-color) / 0.04);
+  --shadow-md: 0 6px 12px hsl(var(--shadow-color) / 0.06), 0 2px 4px hsl(var(--shadow-color) / 0.04);
+  --shadow-lg: 0 16px 32px hsl(var(--shadow-color) / 0.10), 0 4px 8px hsl(var(--shadow-color) / 0.04);
+  --shadow-xl: 0 24px 48px hsl(var(--shadow-color) / 0.14), 0 8px 16px hsl(var(--shadow-color) / 0.06);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
