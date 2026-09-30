@@ -1,10 +1,10 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class BudgetCreate(BaseModel):
-    category: str
-    amount: float
-    period: str  # "YYYY-MM"
+    category: str = Field(min_length=1)
+    amount: float = Field(gt=0)
+    period: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")  # "YYYY-MM"
 
 
 class BudgetOut(BudgetCreate):

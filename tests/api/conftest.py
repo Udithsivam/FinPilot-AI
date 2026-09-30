@@ -4,6 +4,11 @@ import os
 # creates (used once for the initial create_all()) never touches the real
 # dev database file.
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+# The rate limiter's in-memory buckets are keyed by the FastAPI app
+# instance, which conftest imports once and reuses across every test in
+# the session (not per-test) — so without this, tests would trip each
+# other's rate limits well before hitting any real bug.
+os.environ.setdefault("RATE_LIMITING_ENABLED", "false")
 
 import pytest
 from fastapi.testclient import TestClient

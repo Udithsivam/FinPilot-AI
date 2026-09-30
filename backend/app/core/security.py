@@ -15,7 +15,14 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    encoded = plain_password.encode("utf-8")
+    if len(encoded) > 72:
+        # bcrypt raises ValueError above 72 bytes. UserCreate already caps
+        # registration at 72, but login goes through OAuth2PasswordRequestForm
+        # (a plain string with no length constraint), so an over-long
+        # password must fail cleanly here rather than crash the request.
+        return False
+    return bcrypt.checkpw(encoded, hashed_password.encode("utf-8"))
 
 
 def create_access_token(subject: str) -> str:

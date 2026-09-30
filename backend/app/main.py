@@ -3,17 +3,39 @@
 Run with: uvicorn backend.app.main:app --reload
 """
 
+import logging
+
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 import backend.app.models  # noqa: F401 — registers all models before create_all
 from backend.app.api import analytics, auth, budgets, goals, predictions, transactions, users
+from backend.app.core.config import DEFAULT_SECRET_KEY, get_settings
 from backend.app.database.base import Base
 from backend.app.database.session import engine, get_db
 
+logger = logging.getLogger("finpilot")
+
+settings = get_settings()
+
+if settings.secret_key == DEFAULT_SECRET_KEY:
+    logger.warning(
+        "SECRET_KEY is using its default value. This signs every JWT issued by "
+        "this server — set the SECRET_KEY environment variable to a long random "
+        "value before deploying anywhere other than local development."
+    )
+
 app = FastAPI(title="FinPilot AI", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"] if settings.cors_origins == "*" else settings.cors_origins.split(","),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 Base.metadata.create_all(bind=engine)
 

@@ -1,12 +1,12 @@
 import datetime as dt
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class GoalCreate(BaseModel):
-    name: str
-    target_amount: float
-    current_amount: float = 0.0
+    name: str = Field(min_length=1)
+    target_amount: float = Field(gt=0)
+    current_amount: float = Field(ge=0, default=0.0)
     target_date: dt.date | None = None
 
 

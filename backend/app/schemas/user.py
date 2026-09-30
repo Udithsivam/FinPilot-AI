@@ -1,10 +1,12 @@
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
-    full_name: str
+    # bcrypt silently truncates (older versions) or raises (current versions)
+    # on passwords over 72 bytes, so the upper bound isn't arbitrary.
+    password: str = Field(min_length=8, max_length=72)
+    full_name: str = Field(min_length=1)
 
 
 class UserLogin(BaseModel):

@@ -35,6 +35,33 @@ Onboarding, Dashboard, Transactions, Budgets, Goals, Analytics,
 AI Insights (sample-only, clearly marked), Predictions, and Settings.
 See `frontend/README.md`.
 
+**Backend/ML integration audit (done):** a correctness, test-coverage,
+model-lifecycle and security pass over Phase 2-5. Found and fixed real
+bugs — a malformed budget period (`period="not-a-period"`) crashed
+`GET /budgets` with an unhandled 500 because the schema never validated
+its format; over-72-byte passwords crashed both registration and login
+because bcrypt raises above that length; budgets/goals/transactions
+accepted zero or negative amounts. Also added: CORS middleware (missing
+entirely — would have blocked any deployment with the frontend on a
+different origin), a startup warning if `SECRET_KEY` is left at its
+default, per-IP rate limiting on `/auth/login` and `/auth/register`,
+and in-process caching for the ML pipeline (previously re-read from
+disk on every single `/predict/savings` call). 25 new tests. See
+"Known limitations" below for what's flagged but not fixed.
+
+### Known limitations (flagged, not fixed)
+
+- Password strength: only length is enforced (8-72 chars), no
+  complexity requirement.
+- Rate limiting is in-process and per-instance — fine for a single
+  server, not for a horizontally-scaled deployment (would need
+  Redis-backed limiting).
+- No JWT revocation/blocklist — logout is client-side only; a leaked
+  token remains valid until it expires (24h by default).
+- The ML pipeline cache means a newly retrained model isn't picked up
+  until the API process restarts or `clear_pipeline_cache()` is called
+  — there's no automatic invalidation hook from the training/DVC side yet.
+
 ## Project layout
 
 ```

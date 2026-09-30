@@ -1,14 +1,14 @@
 import datetime as dt
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TransactionCreate(BaseModel):
     date: dt.date
-    amount: float
+    amount: float = Field(gt=0)
     type: Literal["income", "expense"]
-    category: str
+    category: str = Field(min_length=1)
     subcategory: str | None = None
     merchant: str | None = None
     payment_method: str | None = None

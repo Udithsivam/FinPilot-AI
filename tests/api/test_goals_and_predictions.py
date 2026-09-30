@@ -14,6 +14,15 @@ def test_delete_missing_goal_returns_404(client, auth_headers):
     assert response.status_code == 404
 
 
+def test_negative_target_amount_rejected(client, auth_headers):
+    response = client.post(
+        "/goals",
+        json={"name": "Laptop", "target_amount": -100.0},
+        headers=auth_headers,
+    )
+    assert response.status_code == 422
+
+
 VALID_PREDICTION_PAYLOAD = {
     "Income": 50000.0,
     "Age": 30,
@@ -49,3 +58,12 @@ def test_predict_savings_rejects_unknown_occupation(client, auth_headers):
     payload = {**VALID_PREDICTION_PAYLOAD, "Occupation": "Astronaut"}
     response = client.post("/predict/savings", json=payload, headers=auth_headers)
     assert response.status_code == 422
+
+
+def test_predict_savings_returns_503_when_model_missing(client, auth_headers, monkeypatch):
+    def _raise_missing(*args, **kwargs):
+        raise FileNotFoundError("no model artifact")
+
+    monkeypatch.setattr("src.pipeline.predict.load_pipeline", _raise_missing)
+    response = client.post("/predict/savings", json=VALID_PREDICTION_PAYLOAD, headers=auth_headers)
+    assert response.status_code == 503

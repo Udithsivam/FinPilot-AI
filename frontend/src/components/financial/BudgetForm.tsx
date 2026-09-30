@@ -11,7 +11,7 @@ import type { BudgetInput } from "@/types/api";
 const schema = z.object({
   category: z.string().min(1, "Category is required"),
   amount: z.coerce.number().positive("Amount must be greater than 0"),
-  period: z.string().regex(/^\d{4}-\d{2}$/, "Pick a month"),
+  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Pick a month"),
 });
 
 interface BudgetFormProps {

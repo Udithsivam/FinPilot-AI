@@ -32,6 +32,35 @@ def test_login_with_wrong_password_rejected(client):
     assert response.status_code == 401
 
 
+def test_overlong_password_rejected_at_registration(client):
+    # Regression: bcrypt raises ValueError above 72 bytes, which used to
+    # surface as an unhandled 500 instead of a clean validation error.
+    response = client.post(
+        "/auth/register",
+        json={"email": "dave@example.com", "password": "x" * 100, "full_name": "Dave"},
+    )
+    assert response.status_code == 422
+
+
+def test_overlong_password_rejected_at_login_without_crashing(client):
+    client.post(
+        "/auth/register",
+        json={"email": "erin@example.com", "password": "supersecret123", "full_name": "Erin"},
+    )
+    response = client.post(
+        "/auth/login", data={"username": "erin@example.com", "password": "x" * 100}
+    )
+    assert response.status_code == 401
+
+
+def test_too_short_password_rejected_at_registration(client):
+    response = client.post(
+        "/auth/register",
+        json={"email": "frank@example.com", "password": "short", "full_name": "Frank"},
+    )
+    assert response.status_code == 422
+
+
 def test_protected_endpoint_requires_token(client):
     response = client.get("/users/me")
     assert response.status_code == 401

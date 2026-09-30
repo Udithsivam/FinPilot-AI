@@ -30,6 +30,36 @@ def test_delete_missing_transaction_returns_404(client, auth_headers):
     assert response.status_code == 404
 
 
+def test_zero_or_negative_amount_rejected(client, auth_headers):
+    assert _add_transaction(client, auth_headers, amount=0).status_code == 422
+    assert _add_transaction(client, auth_headers, amount=-50).status_code == 422
+
+
+def test_empty_category_rejected(client, auth_headers):
+    assert _add_transaction(client, auth_headers, category="").status_code == 422
+
+
+def test_malformed_budget_period_rejected(client, auth_headers):
+    # Regression: a malformed period used to be accepted at creation (no
+    # format validation) and then crash GET /budgets with a 500, since
+    # period_bounds() assumed "YYYY-MM" and blew up on anything else.
+    response = client.post(
+        "/budgets",
+        json={"category": "Groceries", "amount": 1000.0, "period": "not-a-period"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 422
+
+
+def test_negative_budget_amount_rejected(client, auth_headers):
+    response = client.post(
+        "/budgets",
+        json={"category": "Groceries", "amount": -500.0, "period": "2026-01"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 422
+
+
 def test_budget_status_tracks_spending(client, auth_headers):
     client.post(
         "/budgets",
