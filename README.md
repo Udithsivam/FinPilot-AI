@@ -27,10 +27,13 @@ score built from the user's own transactions/budgets/goals. Remaining
 Phase 5 work (categorization, forecasting, anomaly detection,
 recommendations, explainability) is paused in favor of frontend work.
 
-**Phase 6 — Frontend (foundation done):** a React + TypeScript + Vite
-app (`frontend/`) with the full design system, app shell (sidebar/header/
-mobile nav), reusable UI/financial/AI component libraries, and a fully
-wired, real-data Dashboard page. See `frontend/README.md`.
+**Phase 6 — Frontend (done):** a React + TypeScript + Vite app
+(`frontend/`) with the full design system, app shell (sidebar/header/
+mobile nav), reusable UI/financial/AI component libraries, and all 11
+pages built and wired to the real backend: Landing, Login, Register,
+Onboarding, Dashboard, Transactions, Budgets, Goals, Analytics,
+AI Insights (sample-only, clearly marked), Predictions, and Settings.
+See `frontend/README.md`.
 
 ## Project layout
 
@@ -147,6 +150,7 @@ POST /auth/register
 POST /auth/login          (OAuth2 form: username=email, password)
 
 GET  /users/me
+GET  /users/me/profile
 PUT  /users/me/profile
 
 POST   /transactions

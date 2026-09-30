@@ -104,9 +104,10 @@ When Phase 5 intelligence features are built, wire their real API
 responses into these same components and drop the `sample` prop (or
 set it to `false`) — don't build new components for it.
 
-## Pages not built yet
+## Pages
 
-`/transactions`, `/budgets`, `/goals`, `/analytics`, `/insights`,
-`/predictions`, `/settings` are routed to a shared `ComingSoon`
-placeholder so navigation doesn't 404. Only the Dashboard is fully
-built out so far, per the "foundation + Dashboard first" build order.
+All 11 pages are built and wired to the real backend: Landing, Login,
+Register, Onboarding, Dashboard, Transactions, Budgets, Goals,
+Analytics, AI Insights, Predictions, Settings. `ComingSoon` (in
+`pages/ComingSoon.tsx`) remains available as a reusable placeholder for
+any future page, but nothing currently routes to it.
