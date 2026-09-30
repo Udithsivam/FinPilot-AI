@@ -8,8 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/toaster";
 import { api } from "@/lib/api";
-
-const USER_TYPES = ["Student", "Professional", "Self_Employed", "Retired", "Homemaker", "Business_Owner"];
+import { CURRENCIES, USER_TYPES } from "@/lib/constants";
 
 export function Onboarding() {
   const navigate = useNavigate();
@@ -99,9 +98,11 @@ export function Onboarding() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="INR">INR (₹)</SelectItem>
-                <SelectItem value="USD">USD ($)</SelectItem>
-                <SelectItem value="EUR">EUR (€)</SelectItem>
+                {CURRENCIES.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

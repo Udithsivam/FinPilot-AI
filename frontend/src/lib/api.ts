@@ -72,8 +72,9 @@ export const api = {
     });
   },
   me: () => request<User>("/users/me"),
+  getProfile: () => request<ProfileUpdate>("/users/me/profile"),
   updateProfile: (payload: ProfileUpdate) =>
-    request("/users/me/profile", { method: "PUT", body: JSON.stringify(payload) }),
+    request<ProfileUpdate>("/users/me/profile", { method: "PUT", body: JSON.stringify(payload) }),
 
   listTransactions: () => request<Transaction[]>("/transactions"),
   createTransaction: (payload: TransactionInput) =>

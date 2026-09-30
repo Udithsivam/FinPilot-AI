@@ -14,6 +14,11 @@ def read_current_user(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+@router.get("/me/profile", response_model=ProfileOut)
+def read_profile(current_user: User = Depends(get_current_user)):
+    return current_user.profile
+
+
 @router.put("/me/profile", response_model=ProfileOut)
 def update_profile(
     payload: ProfileUpdate,
