@@ -19,14 +19,23 @@ def period_bounds(period: str) -> tuple[dt.date, dt.date]:
 
 
 def spent_for_budget(db: Session, user_id: int, category: str, period: str) -> float:
-    """Sum expense transactions for a category within a "YYYY-MM" period."""
+    """Sum expense transactions for a category within a "YYYY-MM" period.
+
+    Category matching is case- and whitespace-insensitive at the database
+    level (LOWER + TRIM, both standard SQL supported by SQLite and
+    Postgres) so a budget for "Groceries" matches a transaction logged as
+    "groceries" or " Groceries ". This only affects this comparison —
+    stored category text (as shown elsewhere, e.g. transaction lists and
+    category breakdowns) is untouched, and no canonical category taxonomy
+    is introduced here.
+    """
     start, end = period_bounds(period)
     total = (
         db.query(func.coalesce(func.sum(Transaction.amount), 0.0))
         .filter(
             Transaction.user_id == user_id,
             Transaction.type == "expense",
-            Transaction.category == category,
+            func.lower(func.trim(Transaction.category)) == category.strip().lower(),
             Transaction.date >= start,
             Transaction.date < end,
         )

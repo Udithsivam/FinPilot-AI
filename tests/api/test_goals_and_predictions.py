@@ -23,6 +23,37 @@ def test_negative_target_amount_rejected(client, auth_headers):
     assert response.status_code == 422
 
 
+def _other_user_headers(client):
+    client.post(
+        "/auth/register",
+        json={"email": "user-b@example.com", "password": "supersecret123", "full_name": "User B"},
+    )
+    response = client.post(
+        "/auth/login",
+        data={"username": "user-b@example.com", "password": "supersecret123"},
+    )
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+def test_user_cannot_list_or_delete_another_users_goal(client, auth_headers):
+    created = client.post(
+        "/goals",
+        json={"name": "User A's Laptop", "target_amount": 80000.0},
+        headers=auth_headers,
+    ).json()
+    user_b_headers = _other_user_headers(client)
+
+    listing = client.get("/goals", headers=user_b_headers).json()
+    assert all(g["id"] != created["id"] for g in listing)
+
+    delete_response = client.delete(f"/goals/{created['id']}", headers=user_b_headers)
+    assert delete_response.status_code == 404
+
+    # the resource must still belong to, and be visible/deletable by, its owner
+    owner_listing = client.get("/goals", headers=auth_headers).json()
+    assert any(g["id"] == created["id"] for g in owner_listing)
+
+
 VALID_PREDICTION_PAYLOAD = {
     "Income": 50000.0,
     "Age": 30,
