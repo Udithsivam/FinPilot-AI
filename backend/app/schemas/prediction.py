@@ -63,6 +63,19 @@ class CategorizeResponse(BaseModel):
     model_version: str
 
 
+class ReceiptOCRResponse(BaseModel):
+    merchant: str | None
+    amount: float | None
+    date: str | None
+    raw_text: str
+    category: str | None
+    subcategory: str | None
+    confidence: float | None
+    needs_review: bool | None
+    prediction_id: int | None
+    model_version: str | None
+
+
 class ExpenseForecastResponse(BaseModel):
     prediction_id: int
     forecast_period: str

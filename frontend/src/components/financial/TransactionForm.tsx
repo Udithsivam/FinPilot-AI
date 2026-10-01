@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
-import { useState } from "react";
+import { Camera, Sparkles } from "lucide-react";
+import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -11,7 +11,8 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { api } from "@/lib/api";
+import { toast } from "@/components/ui/toaster";
+import { api, ApiError } from "@/lib/api";
 import type { TransactionInput } from "@/types/api";
 
 const schema = z.object({
@@ -40,6 +41,8 @@ export function TransactionForm({ onSubmit, onCancel, isSubmitting }: Transactio
     confidence: number;
     needsReview: boolean;
   } | null>(null);
+  const [scannedText, setScannedText] = useState<string | null>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -73,6 +76,38 @@ export function TransactionForm({ onSubmit, onCancel, isSubmitting }: Transactio
         confidence: result.confidence,
         needsReview: result.needs_review,
       });
+    },
+  });
+
+  const scanReceipt = useMutation({
+    mutationFn: (file: File) => api.scanReceipt(file),
+    onSuccess: (result) => {
+      // Only prefill fields OCR actually extracted with confidence — an
+      // untouched field stays exactly as the user left it rather than
+      // being overwritten with a guess.
+      if (result.merchant) setValue("merchant", result.merchant);
+      if (result.amount !== null) setValue("amount", result.amount as unknown as number, { shouldValidate: true });
+      if (result.date) setValue("date", result.date);
+      if (result.category) {
+        setValue("category", result.category, { shouldValidate: true });
+        setValue("subcategory", result.subcategory ?? "");
+      }
+      setScannedText(result.raw_text);
+      if (result.category && result.prediction_id !== null && result.confidence !== null) {
+        setSuggestion({
+          predictionId: result.prediction_id,
+          category: result.category,
+          subcategory: result.subcategory ?? "",
+          confidence: result.confidence,
+          needsReview: result.needs_review ?? false,
+        });
+      }
+      if (!result.amount && !result.merchant && !result.category) {
+        toast.error("Couldn't read enough from that receipt — please fill in the details manually.");
+      }
+    },
+    onError: (error) => {
+      toast.error(error instanceof ApiError ? error.message : "Couldn't scan that receipt.");
     },
   });
 
@@ -135,21 +170,52 @@ export function TransactionForm({ onSubmit, onCancel, isSubmitting }: Transactio
         <Input id="description" placeholder="Optional note" {...register("description")} />
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
           Have a merchant or description? Get a suggested category from the trained model.
         </p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          isLoading={categorize.isPending}
-          onClick={() => categorize.mutate()}
-        >
-          <Sparkles />
-          Suggest category
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <input
+            ref={receiptInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) scanReceipt.mutate(file);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            isLoading={scanReceipt.isPending}
+            onClick={() => receiptInputRef.current?.click()}
+          >
+            <Camera />
+            Scan receipt
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            isLoading={categorize.isPending}
+            onClick={() => categorize.mutate()}
+          >
+            <Sparkles />
+            Suggest category
+          </Button>
+        </div>
       </div>
+
+      {scannedText && (
+        <details className="rounded-md border border-border p-2 text-xs text-muted-foreground">
+          <summary className="cursor-pointer select-none">Scanned text (OCR) — review before saving</summary>
+          <pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap">{scannedText}</pre>
+        </details>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">

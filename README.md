@@ -122,6 +122,14 @@ data seed script (`scripts/seed_demo_data.py`). 71 tests total
   LightGBM/CatBoost and sentence-transformers were evaluated and
   deliberately not added (see "Model selection" below) given the
   dataset's small size and this project's dependency-footprint goals.
+- **Receipt OCR requires a system-level Tesseract install** (not just
+  `pip install`) — see "Receipt OCR" above. Field extraction is
+  regex-heuristic over Tesseract's raw text output, not a receipt-
+  specific parsing model; on a cluttered, low-quality, or heavily
+  skewed photo it may leave a field `null` (never a wrong guess) or
+  occasionally merge adjacent words (e.g. a merchant name split across
+  two lines). The receipt image is processed in memory and never
+  persisted to disk or the database.
 
 ## Project layout
 
@@ -308,6 +316,56 @@ unnecessary architecture. `sentence-transformers` (for embedding-based
 categorization/RAG) was evaluated the same way and not adopted — see
 "Known limitations".
 
+## Receipt OCR
+
+`POST /transactions/receipt-ocr` (multipart file upload) extracts
+merchant, amount and date from a photographed or scanned receipt using
+[Tesseract](https://github.com/tesseract-ocr/tesseract) (via
+`pytesseract`), then runs the same categorization model used by
+`/transactions/categorize` on the extracted text — see
+`src/ocr/receipt_parser.py`.
+
+**Why Tesseract, not a deep-learning OCR model (e.g. EasyOCR):**
+Tesseract is a small, mature, CPU-only engine with a thin pip wrapper;
+EasyOCR would pull in a multi-GB PyTorch dependency for a task Tesseract
+already handles well on printed/typed receipt text — the same
+dependency-footprint reasoning applied elsewhere in this project (see
+"Model selection" above). The tradeoff: Tesseract is a **separate system
+binary**, not just a pip package.
+
+**Install (Windows):**
+```
+winget install --id UB-Mannheim.TesseractOCR --source winget
+pip install pytesseract Pillow
+```
+If it isn't on your `PATH` after installing, either add
+`C:\Program Files\Tesseract-OCR` to `PATH`, or set the
+`TESSERACT_CMD` environment variable to the full path of
+`tesseract.exe`. Linux: `sudo apt-get install tesseract-ocr` +
+`pip install pytesseract Pillow`. If the binary genuinely can't be
+found, the endpoint returns a `503` explaining exactly that — it never
+silently falls back to a fake result.
+
+**Never fabricates a field.** Merchant/amount/date extraction uses
+conservative regex heuristics over the raw OCR text (e.g. preferring a
+line containing "Grand Total" for the amount, rejecting a date that
+doesn't parse to a plausible year); any field it isn't reasonably
+confident about comes back `null` rather than a guess, and the raw OCR
+text is always returned alongside so the user can verify. **The receipt
+image itself is never stored** — only the extracted fields and the
+resulting category prediction persist (the same `predictions` row a
+manually-typed categorization would create, so a later correction still
+flows into feedback normally).
+
+**Works on real phones, no native app needed.** The "Scan receipt"
+button in `TransactionForm.tsx` uses a plain
+`<input type="file" accept="image/*" capture="environment">`. On a real
+mobile browser (iOS Safari, Android Chrome) this attribute opens the
+device's rear camera directly — the captured photo uploads to the same
+`/transactions/receipt-ocr` endpoint as any other file. On desktop
+browsers, `capture` is ignored and a normal file picker opens instead;
+both paths hit the same code.
+
 ## RAG & Financial Assistant
 
 `POST /ai/chat` combines three genuinely separate sources, never letting
@@ -418,8 +476,9 @@ GET  /predictions/expenses    (next-month expense forecast)
 GET  /predictions/cash-flow   (next-month income/expense/net cash flow forecast)
 PATCH /predictions/{id}/actual (record a real later-known outcome, for monitoring)
 
-POST /transactions/categorize (TF-IDF/LinearSVC categorizer; confidence + needs_review)
-GET  /transactions/search     (semantic search over the caller's own transactions)
+POST /transactions/categorize   (TF-IDF/LinearSVC categorizer; confidence + needs_review)
+POST /transactions/receipt-ocr  (Tesseract OCR + categorization; see "Receipt OCR" above)
+GET  /transactions/search       (semantic search over the caller's own transactions)
 
 POST /feedback                 (category corrections etc., ownership-validated)
 

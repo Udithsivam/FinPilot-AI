@@ -179,6 +179,19 @@ export interface CategorizeRequest {
   description?: string | null;
 }
 
+export interface ReceiptOCRResponse {
+  merchant: string | null;
+  amount: number | null;
+  date: string | null;
+  raw_text: string;
+  category: string | null;
+  subcategory: string | null;
+  confidence: number | null;
+  needs_review: boolean | null;
+  prediction_id: number | null;
+  model_version: string | null;
+}
+
 export interface CategorizeResponse {
   prediction_id: number;
   category: string;

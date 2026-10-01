@@ -17,6 +17,7 @@ import type {
   MonthlyBreakdown,
   PredictionHistoryItem,
   ProfileUpdate,
+  ReceiptOCRResponse,
   Recommendation,
   SavingsPredictionRequest,
   SavingsPredictionResponse,
@@ -50,7 +51,8 @@ export function setToken(token: string | null) {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
   const headers = new Headers(init?.headers);
-  if (!(init?.body instanceof URLSearchParams) && !headers.has("Content-Type")) {
+  const skipJsonContentType = init?.body instanceof URLSearchParams || init?.body instanceof FormData;
+  if (!skipJsonContentType && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
   if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -96,6 +98,11 @@ export const api = {
     request<CategorizeResponse>("/transactions/categorize", { method: "POST", body: JSON.stringify(payload) }),
   searchTransactions: (q: string) =>
     request<SemanticSearchResult[]>(`/transactions/search?q=${encodeURIComponent(q)}`),
+  scanReceipt: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<ReceiptOCRResponse>("/transactions/receipt-ocr", { method: "POST", body: form });
+  },
 
   listBudgets: () => request<Budget[]>("/budgets"),
   createBudget: (payload: BudgetInput) =>
